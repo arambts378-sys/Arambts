@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ARAM BTS Studio — Visual Event Website Builder</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "inverse-surface": "#31302d",
+            "on-error-container": "#93000a",
+            "error": "#ba1a1a",
+            "primary-fixed-dim": "#ffb1c2",
+            "inverse-primary": "#ffb1c2",
+            "outline-variant": "#dac0c4",
+            "secondary-container": "#ffa5ba",
+            "on-surface": "#1c1c19",
+            "surface-container-highest": "#e6e2dd",
+            "on-tertiary-fixed-variant": "#474746",
+            "on-primary-container": "#ff8ba8",
+            "surface-variant": "#e6e2dd",
+            "background": "#fdf9f4",
+            "primary-container": "#7a1f3d",
+            "on-primary-fixed-variant": "#802442",
+            "surface-bright": "#fdf9f4",
+            "on-secondary-fixed": "#3c0519",
+            "on-secondary": "#ffffff",
+            "error-container": "#ffdad6",
+            "surface-container-lowest": "#ffffff",
+            "outline": "#887275",
+            "on-primary-fixed": "#3f0018",
+            "tertiary-container": "#434242",
+            "on-secondary-container": "#7b374a",
+            "surface-container-low": "#f7f3ee",
+            "primary": "#5c0427",
+            "surface-dim": "#ddd9d5",
+            "tertiary-fixed": "#e5e2e1",
+            "secondary-fixed-dim": "#ffb1c3",
+            "secondary-fixed": "#ffd9e0",
+            "on-tertiary-container": "#b1aeae",
+            "on-tertiary-fixed": "#1c1b1b",
+            "inverse-on-surface": "#f4f0eb",
+            "surface": "#fdf9f4",
+            "surface-container": "#f1ede8",
+            "on-surface-variant": "#554245",
+            "surface-container-high": "#ebe8e3",
+            "primary-fixed": "#ffd9df",
+            "tertiary-fixed-dim": "#c8c6c5",
+            "surface-tint": "#9f3c59",
+            "secondary": "#90485c",
+            "on-secondary-fixed-variant": "#733144",
+            "on-primary": "#ffffff",
+            "on-background": "#1c1c19",
+            "on-error": "#ffffff",
+            "tertiary": "#2c2c2c",
+            "on-tertiary": "#ffffff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "margin": "1rem",
+            "space-xs": "0.25rem",
+            "space-md": "1rem",
+            "gutter-desktop": "1.5rem",
+            "margin-desktop": "2rem",
+            "space-xl": "2.5rem",
+            "space-lg": "1.5rem",
+            "space-sm": "0.5rem",
+            "gutter": "1rem"
+          },
+          "fontFamily": {
+            "headline-lg-mobile": ["Plus Jakarta Sans"],
+            "mono-data": ["JetBrains Mono"],
+            "body-sm": ["Inter"],
+            "headline-md": ["Plus Jakarta Sans"],
+            "headline-lg": ["Plus Jakarta Sans"],
+            "headline-xl": ["Plus Jakarta Sans"],
+            "body-lg": ["Inter"],
+            "label-md": ["Inter"],
+            "headline-sm": ["Plus Jakarta Sans"],
+            "headline-xl-mobile": ["Plus Jakarta Sans"],
+            "label-sm": ["Inter"],
+            "mono-badge": ["JetBrains Mono"],
+            "mono-metric": ["JetBrains Mono"],
+            "body-md": ["Inter"]
+          },
+          "fontSize": {
+            "headline-lg-mobile": ["22px", { "lineHeight": "30px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "mono-data": ["13px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "500" }],
+            "body-sm": ["12px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-md": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "headline-xl": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "400" }],
+            "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+            "headline-sm": ["16px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+            "headline-xl-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "700" }],
+            "label-sm": ["11px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+            "mono-badge": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+            "mono-metric": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      font-size: 18px;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #fdf9f4;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #dac0c4;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="h-full bg-background text-on-surface overflow-hidden flex flex-col antialiased selection:bg-primary-container selection:text-on-primary">
+<!-- TOP APP BAR -->
+<header class="h-14 bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between px-space-md z-30 shrink-0 select-none">
+<!-- Left: Navigation & Event Identity -->
+<div class="flex items-center gap-space-sm">
+<a class="flex items-center gap-1 text-label-md font-label-md text-on-surface-variant hover:text-primary transition-colors py-1 px-2 rounded hover:bg-surface-container" href="#">
+<span class="material-symbols-outlined text-[16px]">arrow_back</span>
+<span>Back to Event</span>
+</a>
+<div class="h-5 w-[1px] bg-outline-variant mx-1"></div>
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded bg-primary-container flex items-center justify-center text-on-primary font-headline-sm font-bold text-xs tracking-tight">
+          A
+        </div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm font-bold text-primary">ARAM BTS</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant">/ Website Editor</span>
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-mono-badge font-mono-badge bg-[#FDF6EB] text-[#8F5300] border border-[#F3DBB3]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#8F5300] animate-pulse"></span>
+              STATUS: DRAFT
+            </span>
+</div>
+</div>
+</div>
+</div>
+<!-- Center: Viewport & Canvas Controls -->
+<div class="flex items-center gap-space-sm">
+<div class="flex items-center p-0.5 bg-surface-container rounded border border-outline-variant">
+<button class="flex items-center gap-1.5 px-2.5 py-1 rounded text-label-sm font-label-sm bg-surface-container-lowest text-primary font-semibold shadow-sm">
+<span class="material-symbols-outlined text-[15px]">desktop_windows</span>
+<span>Desktop <span class="text-mono-badge font-mono-badge opacity-75 font-normal">1440px</span></span>
+</button>
+<button class="flex items-center gap-1.5 px-2.5 py-1 rounded text-label-sm font-label-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[15px]">tablet_mac</span>
+<span>Tablet <span class="text-mono-badge font-mono-badge opacity-75 font-normal">768px</span></span>
+</button>
+<button class="flex items-center gap-1.5 px-2.5 py-1 rounded text-label-sm font-label-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[15px]">smartphone</span>
+<span>Mobile <span class="text-mono-badge font-mono-badge opacity-75 font-normal">390px</span></span>
+</button>
+</div>
+<div class="h-4 w-[1px] bg-outline-variant"></div>
+<div class="flex items-center gap-0.5 text-on-surface-variant">
+<button class="p-1.5 hover:bg-surface-container rounded hover:text-on-surface transition-colors" title="Undo">
+<span class="material-symbols-outlined text-[18px]">undo</span>
+</button>
+<button class="p-1.5 hover:bg-surface-container rounded hover:text-on-surface transition-colors" title="Redo">
+<span class="material-symbols-outlined text-[18px]">redo</span>
+</button>
+<div class="flex items-center px-1.5 py-1 text-mono-badge font-mono-badge text-on-surface-variant">
+          100%
+        </div>
+</div>
+</div>
+<!-- Right: Publishing & Trailing Actions -->
+<div class="flex items-center gap-2">
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded border border-outline-variant text-label-md font-label-md text-on-surface bg-surface-container-lowest hover:bg-surface-container hover:border-outline transition-colors active:scale-[0.98]">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+<span>Preview</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded border border-outline-variant text-label-md font-label-md text-on-surface bg-surface-container-lowest hover:bg-surface-container hover:border-outline transition-colors active:scale-[0.98]">
+<span class="material-symbols-outlined text-[16px]">save</span>
+<span>Save</span>
+</button>
+<button class="flex items-center gap-1.5 px-4 py-1.5 rounded bg-primary-container text-on-primary text-label-md font-label-md font-semibold hover:bg-primary transition-colors shadow-sm active:scale-[0.98]">
+<span>Publish Website</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</header>
+<!-- 3-COLUMN ARCHITECTURE CORE -->
+<div class="flex flex-1 min-h-0 relative">
+<!-- ========================================== -->
+<!-- LEFT PANEL: WEBSITE SECTIONS (260px)      -->
+<!-- ========================================== -->
+<aside class="w-[240px] bg-surface-container-lowest border-r border-outline-variant flex flex-col shrink-0 select-none z-10">
+<!-- Section Header -->
+<div class="p-3 border-b border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="text-label-sm font-label-sm tracking-wider uppercase font-semibold text-on-surface-variant">Website Sections</span>
+<span class="px-1.5 py-0.5 rounded text-mono-badge font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">8 Active</span>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors" title="Manage ordering">
+<span class="material-symbols-outlined text-[16px]">sort</span>
+</button>
+</div>
+<!-- Draggable Reorderable Sections List -->
+<div class="flex-1 overflow-y-auto custom-scroll p-2 space-y-1">
+<!-- 1. Hero (Active / Selected) -->
+<div class="group flex items-center justify-between px-2 py-2 rounded bg-primary-fixed/30 border-l-4 border-primary text-primary font-semibold transition-colors cursor-pointer">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-outline text-[16px] cursor-grab">drag_indicator</span>
+<span class="text-label-md font-label-md truncate">1. Home / Hero</span>
+</div>
+<div class="flex items-center gap-1 text-primary shrink-0">
+<button class="hover:bg-primary/10 p-1 rounded" title="Visible on site">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+</button>
+<span class="material-symbols-outlined text-[16px]">edit</span>
+</div>
+</div>
+<!-- 2. About the Event -->
+<div class="group flex items-center justify-between px-2 py-2 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border-l-4 border-transparent">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-outline-variant group-hover:text-outline text-[16px] cursor-grab">drag_indicator</span>
+<span class="text-label-md font-label-md truncate">2. About the Event</span>
+</div>
+<div class="flex items-center gap-1 text-outline shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="hover:text-primary p-1">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+</button>
+</div>
+</div>
+<!-- 3. Keynote Speakers -->
+<div class="group flex items-center justify-between px-2 py-2 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border-l-4 border-transparent">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-outline-variant group-hover:text-outline text-[16px] cursor-grab">drag_indicator</span>
+<span class="text-label-md font-label-md truncate">3. Keynote Speakers</span>
+</div>
+<div class="flex items-center gap-1 text-outline shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="hover:text-primary p-1">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+</button>
+</div>
+</div>
+<!-- 4. Event Agenda -->
+<div class="group flex items-center justify-between px-2 py-2 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border-l-4 border-transparent">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-outline-variant group-hover:text-outline text-[16px] cursor-grab">drag_indicator</span>
+<span class="text-label-md font-label-md truncate">4. Event Agenda</span>
+</div>
+<div class="flex items-center gap-1 text-outline shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="hover:text-primary p-1">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+</button>
+</div>
+</div>
+<!-- 5. Sponsors & Partners -->
+<div class="group flex items-center justify-between px-2 py-2 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border-l-4 border-transparent">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-outline-variant group-hover:text-outline text-[16px] cursor-grab">drag_indicator</span>
+<span class="text-label-md font-label-md truncate">5. Sponsors &amp; Partners</span>
+</div>
+<div class="flex items-center gap-1 text-outline shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="hover:text-primary p-1">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+</button>
+</div>
+</div>
+<!-- 6. Volunteers (Optional) -->
+<div class="group flex items-center justify-between px-2 py-2 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border-l-4 border-transparent opacity-85">
+<div class="flex items-center gap-1.5 min-w-0">
+<span class="material-symbols-outlined text-outline-variant group-hover:text-outline text-[16px] cursor-grab">drag_indicator</span>
+<span class="text-label-md font-label-md truncate">6. Volunteers</span>
+<span class="px-1 py-0.2 rounded text-[9px] font-mono-badge bg-surface-container-high text-on-surface-variant border border-outline-variant">OPTIONAL</span>
+</div>
+<div class="flex items-center gap-1 text-outline shrink-0">
+<button class="hover:text-primary p-1" title="Hidden from live navigation">
+<span class="material-symbols-outlined text-[16px] text-outline">visibility_off</span>
+</button>
+</div>
+</div>
+<!-- 7. Register & Passes -->
+<div class="group flex items-center justify-between px-2 py-2 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border-l-4 border-transparent">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-outline-variant group-hover:text-outline text-[16px] cursor-grab">drag_indicator</span>
+<span class="text-label-md font-label-md truncate">7. Register &amp; Passes</span>
+</div>
+<div class="flex items-center gap-1 text-outline shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="hover:text-primary p-1">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+</button>
+</div>
+</div>
+<!-- 8. Venue & Location -->
+<div class="group flex items-center justify-between px-2 py-2 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border-l-4 border-transparent">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-outline-variant group-hover:text-outline text-[16px] cursor-grab">drag_indicator</span>
+<span class="text-label-md font-label-md truncate">8. Venue &amp; Location</span>
+</div>
+<div class="flex items-center gap-1 text-outline shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="hover:text-primary p-1">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+</button>
+</div>
+</div>
+<!-- 9. Contact & FAQ -->
+<div class="group flex items-center justify-between px-2 py-2 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border-l-4 border-transparent">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-outline-variant group-hover:text-outline text-[16px] cursor-grab">drag_indicator</span>
+<span class="text-label-md font-label-md truncate">9. Contact &amp; FAQ</span>
+</div>
+<div class="flex items-center gap-1 text-outline shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="hover:text-primary p-1">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+</button>
+</div>
+</div>
+<!-- 10. Website Footer -->
+<div class="group flex items-center justify-between px-2 py-2 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer border-l-4 border-transparent">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-outline-variant group-hover:text-outline text-[16px] cursor-grab">drag_indicator</span>
+<span class="text-label-md font-label-md truncate">10. Website Footer</span>
+</div>
+<div class="flex items-center gap-1 text-outline shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="hover:text-primary p-1">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Quick Section Inspector Trigger -->
+<div class="p-3 bg-surface-container-low border-t border-outline-variant">
+<div class="p-2.5 bg-surface-container-lowest rounded border border-outline-variant shadow-sm">
+<div class="flex items-center justify-between mb-1.5">
+<span class="text-label-sm font-label-sm font-semibold text-primary uppercase tracking-wide">Inspecting Hero</span>
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-[11px] mb-2 leading-tight">
+Keynote hero configuration active in canvas.
+</p>
+<button class="w-full flex items-center justify-center gap-1 py-1 px-2 rounded bg-surface border border-outline-variant hover:border-primary text-label-sm font-label-sm font-medium text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[15px]">tune</span>
+<span>Edit Section Details</span>
+</button>
+</div>
+<button class="mt-2 w-full py-2 px-3 border border-dashed border-outline hover:border-primary text-on-surface-variant hover:text-primary rounded text-label-md font-label-md flex items-center justify-center gap-1.5 transition-colors bg-surface-container-lowest">
+<span class="material-symbols-outlined text-[16px]">add</span>
+<span>+ Add Section</span>
+</button>
+</div>
+</aside>
+<!-- ========================================== -->
+<!-- CENTER PANEL: LIVE WEBSITE PREVIEW CANVAS   -->
+<!-- ========================================== -->
+<main class="flex-1 bg-[#F4EFE8] p-6 overflow-y-auto custom-scroll flex justify-center items-start">
+<!-- Simulated Browser Viewport Shell (1080px responsive canvas) -->
+<div class="w-full max-w-[1040px] bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant overflow-hidden flex flex-col mb-12 transition-all">
+<!-- Browser Chrome Header Bar -->
+<div class="h-10 bg-surface-container border-b border-outline-variant px-4 flex items-center justify-between select-none">
+<!-- Window Controls -->
+<div class="flex items-center gap-2 w-20">
+<span class="w-3 h-3 rounded-full bg-[#e85e56] border border-[#d24c44]"></span>
+<span class="w-3 h-3 rounded-full bg-[#f4be4f] border border-[#d9a43a]"></span>
+<span class="w-3 h-3 rounded-full bg-[#62c554] border border-[#4fad43]"></span>
+</div>
+<!-- URL Bar -->
+<div class="flex-1 max-w-lg bg-surface-container-lowest rounded px-3 py-1 border border-outline-variant flex items-center justify-between shadow-inner text-label-sm font-label-sm">
+<div class="flex items-center gap-1.5 text-on-surface-variant overflow-hidden truncate">
+<span class="material-symbols-outlined text-[14px] text-green-700">lock</span>
+<span class="text-on-surface font-medium">https://summit2027.aram.bts</span><span class="text-outline">/preview</span>
+</div>
+<div class="flex items-center gap-2 text-outline">
+<span class="material-symbols-outlined text-[14px] hover:text-on-surface cursor-pointer">refresh</span>
+<span class="material-symbols-outlined text-[14px] hover:text-on-surface cursor-pointer">open_in_new</span>
+</div>
+</div>
+<!-- Right Space filler -->
+<div class="w-20 flex justify-end items-center gap-1 text-on-surface-variant">
+<span class="text-mono-badge font-mono-badge text-[10px] text-outline">LIVE SYNC</span>
+<span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+</div>
+</div>
+<!-- ============================================== -->
+<!-- RENDERED EVENT WEBSITE: SUMMIT 2027            -->
+<!-- ============================================== -->
+<div class="bg-surface text-on-surface min-h-[900px] flex flex-col transition-all duration-300" id="rendered-live-canvas">
+<!-- Event Website Navigation Header -->
+<nav class="h-16 px-8 border-b border-outline-variant flex items-center justify-between bg-surface-container-lowest sticky top-0 z-20" id="canvas-nav">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded bg-primary-container text-on-primary flex items-center justify-center font-headline-sm font-bold text-sm" id="canvas-nav-avatar">
+AL
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm font-bold tracking-tight text-primary leading-none" id="canvas-nav-title">SUMMIT '27</div>
+<div class="text-[9px] font-mono-badge text-on-surface-variant uppercase tracking-wider">Executive Forum</div>
+</div>
+</div>
+<!-- Nav Links -->
+<div class="hidden md:flex items-center gap-6 text-label-md font-label-md text-on-surface-variant" id="canvas-nav-links">
+<a class="text-primary font-semibold" href="#">Home</a>
+<a class="hover:text-primary transition-colors" href="#">About</a>
+<a class="hover:text-primary transition-colors" href="#">Keynote</a>
+<a class="hover:text-primary transition-colors" href="#">Agenda</a>
+<a class="hover:text-primary transition-colors" href="#">Speakers</a>
+<a class="hover:text-primary transition-colors" href="#">Passes</a>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-mono-badge font-mono-badge text-xs text-on-surface-variant hidden lg:inline" id="canvas-date-badge">MAR 12–13 • CHENNAI</span>
+<button class="px-4 py-2 bg-primary-container text-on-primary rounded text-label-md font-label-md font-semibold hover:bg-primary transition-colors shadow-sm" id="canvas-primary-cta">
+Register Now
+</button>
+</div>
+</nav>
+<!-- HERO SECTION (ACTIVE / INSPECTED IN EDITOR) -->
+<div class="relative border-2 border-primary ring-4 ring-primary/10 transition-all" id="canvas-hero-wrapper">
+<!-- Section Status Floating Badges & Action Toolbar -->
+<div class="absolute -top-3.5 left-6 bg-primary text-on-primary px-3 py-0.5 rounded text-mono-badge font-mono-badge text-[10px] font-bold tracking-wider flex items-center gap-2 z-10 shadow">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary-container"></span>
+<span id="canvas-inspect-badge">EDITING: HERO SECTION</span>
+<div class="flex items-center gap-1 ml-2 border-l border-on-primary/30 pl-2">
+<button class="hover:text-secondary-fixed" title="Move Up"><span class="material-symbols-outlined text-[13px]">arrow_upward</span></button>
+<button class="hover:text-secondary-fixed" title="Move Down"><span class="material-symbols-outlined text-[13px]">arrow_downward</span></button>
+<button class="hover:text-secondary-fixed" title="Section Settings"><span class="material-symbols-outlined text-[13px]">settings</span></button>
+</div>
+</div>
+<!-- Quick Edit Floating Tooltip on Hover -->
+<div class="absolute top-4 right-4 z-10">
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-lowest text-primary font-label-md text-xs font-semibold shadow-md border border-outline-variant hover:bg-surface-container transition-transform active:scale-95">
+<span class="material-symbols-outlined text-[15px]">edit</span>
+<span>Edit Hero Content</span>
+</button>
+</div>
+<!-- Hero Body Content Container -->
+<div class="p-8 md:p-12 lg:p-14 bg-gradient-to-b from-surface to-surface-container-low" id="canvas-hero-content">
+<div class="max-w-3xl mb-8">
+<!-- Meta Tags -->
+<div class="flex flex-wrap items-center gap-2 mb-4">
+<span class="px-2.5 py-1 rounded bg-surface-container text-primary text-mono-badge font-mono-badge text-xs font-semibold border border-outline-variant" id="canvas-forum-pill">
+ANNUAL GLOBAL FORUM
+</span>
+<span class="text-on-surface-variant text-label-sm font-label-sm" id="canvas-date-venue">
+12–13 March 2027 • Chennai Trade Centre, India
+</span>
+</div>
+<!-- Editorial Headline -->
+<h1 class="text-headline-xl font-headline-xl text-primary font-extrabold tracking-tight mb-4 leading-tight" id="canvas-hero-h1">
+Annual Leadership Summit 2027
+</h1>
+<!-- Subheading Description -->
+<p class="text-body-lg font-body-lg text-on-surface-variant max-w-2xl mb-8 leading-relaxed" id="canvas-hero-desc">
+Join 1,200+ executive delegates, global enterprise architects, and technology leaders shaping the next decade of scalable infrastructure, sovereign intelligence, and resilient commerce systems.
+</p>
+<!-- CTA Buttons Group -->
+<div class="flex flex-wrap items-center gap-4" id="canvas-hero-cta-group">
+<a class="px-6 py-3 bg-primary-container text-on-primary rounded text-label-md font-label-md font-semibold hover:bg-primary transition-colors shadow-sm flex items-center gap-2" href="#register" id="canvas-hero-btn-primary">
+<span>Register for Pass</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+<a class="px-6 py-3 bg-surface-container-lowest text-on-surface border border-outline-variant rounded text-label-md font-label-md font-medium hover:bg-surface-container transition-colors flex items-center gap-2" href="#agenda" id="canvas-hero-btn-secondary">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+<span>View Full Agenda</span>
+</a>
+<div class="flex items-center gap-2 pl-4 text-mono-badge font-mono-badge text-xs text-on-surface-variant border-l border-outline-variant" id="canvas-hero-meta">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+<span>Early Bird Tier 1 Closes Jan 30</span>
+</div>
+</div>
+</div>
+<!-- Keynote Stage Hero Visual (Cinematic Conference Keynote Photography) -->
+<div class="relative rounded-lg overflow-hidden border border-outline-variant shadow-md" id="canvas-hero-media-wrapper">
+<img alt="Cinematic keynote stage at Annual Leadership Summit 2027" class="w-full h-[360px] object-cover object-center" src="https://lh3.googleusercontent.com/aida/AEtjO1UfhM-3NIMicfkqlNy_Vmr7EZ1M7pT3pBoc_v3M8NIp6QKUTrqRNwzit3GETMTuOhkqcnf4DbFIiJOkhKYlGPkXO8nEydeIHf8DDgZDNYWYUaRnuOpOVEbU_uW2uIsxNaaEjJlgeq7Zl1JfzHsZco-ILx0HwIKaC7s3dyARCi2MH3kLHAN7oVYTMwq71GGVJsU0_cpz46zWRh8Ey9eFp72XYyd_GHQsNfr5R5dmvHHqNDZx5i20lyq_bZc"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+<!-- Stage Overlay Caption -->
+<div class="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded text-mono-badge font-mono-badge text-[10px] bg-primary-container text-on-primary" id="canvas-overlay-pill">
+MAIN AUDITORIUM STAGE A
+</span>
+<span class="text-label-md font-label-md font-medium">Scale Tomorrow: Enterprise Keynote Session</span>
+</div>
+<div class="flex items-center gap-1.5 text-mono-badge font-mono-badge text-xs opacity-80">
+<span class="material-symbols-outlined text-[15px]">headset</span>
+<span>Live Translation: 6 Channels</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- SECTION 2: ABOUT THE SUMMIT -->
+<div class="p-8 md:p-12 border-b border-outline-variant bg-surface-container-lowest" id="canvas-section-about">
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+<div>
+<span class="text-mono-badge font-mono-badge text-xs text-primary font-semibold uppercase tracking-wider" id="canvas-about-tag">
+02 • CONTEXT &amp; PURPOSE
+</span>
+<h2 class="text-headline-lg font-headline-lg text-on-surface font-bold mt-1" id="canvas-about-heading">
+Engineered for High-Stakes Decision Makers
+</h2>
+</div>
+<p class="text-body-md font-body-md text-on-surface-variant max-w-md">
+Two intensive days of unfiltered case studies, technical white-papers, and executive roundtable negotiations.
+</p>
+</div>
+<!-- Metric Highlights Bento -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="canvas-metrics-grid">
+<div class="p-4 bg-surface-container-low rounded border border-outline-variant">
+<div class="text-mono-metric font-mono-metric text-primary">1,200+</div>
+<div class="text-label-sm font-label-sm uppercase tracking-wide text-on-surface-variant mt-1">Vetted Delegates</div>
+</div>
+<div class="p-4 bg-surface-container-low rounded border border-outline-variant">
+<div class="text-mono-metric font-mono-metric text-primary">48</div>
+<div class="text-label-sm font-label-sm uppercase tracking-wide text-on-surface-variant mt-1">Keynote Sessions</div>
+</div>
+<div class="p-4 bg-surface-container-low rounded border border-outline-variant">
+<div class="text-mono-metric font-mono-metric text-primary">32</div>
+<div class="text-label-sm font-label-sm uppercase tracking-wide text-on-surface-variant mt-1">Countries Represented</div>
+</div>
+<div class="p-4 bg-surface-container-low rounded border border-outline-variant">
+<div class="text-mono-metric font-mono-metric text-primary">100%</div>
+<div class="text-label-sm font-label-sm uppercase tracking-wide text-on-surface-variant mt-1">Executive Focus</div>
+</div>
+</div>
+</div>
+<!-- SECTION 3: KEYNOTE SPEAKERS -->
+<div class="p-8 md:p-12 bg-surface" id="canvas-section-speakers">
+<div class="flex items-center justify-between mb-6">
+<div>
+<span class="text-mono-badge font-mono-badge text-xs text-primary font-semibold uppercase tracking-wider" id="canvas-speakers-tag">
+03 • LEADERSHIP VOICES
+</span>
+<h2 class="text-headline-lg font-headline-lg text-on-surface font-bold mt-1">
+Featured Keynote Speakers
+</h2>
+</div>
+<a class="text-label-md font-label-md text-primary font-semibold hover:underline flex items-center gap-1" href="#" id="canvas-speakers-link">
+<span>View all 48 speakers</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+</div>
+<!-- Speaker Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="canvas-speakers-grid">
+<!-- Speaker 1 -->
+<div class="p-5 bg-surface-container-lowest rounded-lg border border-outline-variant flex gap-4 items-center">
+<div class="w-20 h-20 rounded bg-surface-container shrink-0 overflow-hidden border border-outline-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-outline text-3xl">account_circle</span>
+</div>
+<div>
+<span class="text-mono-badge font-mono-badge text-[10px] text-primary font-semibold">OPENING KEYNOTE</span>
+<h3 class="text-headline-sm font-headline-sm text-on-surface font-bold">Dr. Rajesh Varma</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Chief Systems Architect, HyperScale India</p>
+<p class="text-label-sm font-label-sm text-outline mt-2 italic">“Deterministic Cloud Infrastructures at 100M QPS”</p>
+</div>
+</div>
+<!-- Speaker 2 -->
+<div class="p-5 bg-surface-container-lowest rounded-lg border border-outline-variant flex gap-4 items-center">
+<div class="w-20 h-20 rounded bg-surface-container shrink-0 overflow-hidden border border-outline-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-outline text-3xl">account_circle</span>
+</div>
+<div>
+<span class="text-mono-badge font-mono-badge text-[10px] text-primary font-semibold">STRATEGY TRACK</span>
+<h3 class="text-headline-sm font-headline-sm text-on-surface font-bold">Priya Sundaram</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant">VP Global Infrastructure, Vertex Capital</p>
+<p class="text-label-sm font-label-sm text-outline mt-2 italic">“Capital Allocation in the Post-Cloud Era”</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- ========================================== -->
+<!-- RIGHT PANEL: TEMPLATE GALLERY & ENGINE     -->
+<!-- Permanently visible 380px studio rail      -->
+<!-- ========================================== -->
+<aside class="w-[440px] bg-surface-container-lowest border-l border-outline-variant flex flex-col shrink-0 select-none z-10 shadow-sm">
+<!-- Panel Header -->
+<div class="p-4 border-b border-outline-variant">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">WEBSITE TEMPLATES</h2>
+<span class="text-mono-badge font-mono-badge text-xs px-2 py-0.5 rounded bg-surface-container text-on-surface-variant border border-outline-variant">10 Presets</span>
+</div>
+<span class="text-[11px] font-mono-badge text-primary font-semibold bg-primary-fixed/30 px-2 py-0.5 rounded">ARAM BTS</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1.5 leading-snug">
+Choose a visual style for your event website. All content, sections, and agenda data are preserved across switches.
+</p>
+<!-- Category Filter Chips -->
+<div class="flex items-center gap-1.5 mt-3 overflow-x-auto custom-scroll pb-1">
+<button class="px-2.5 py-1 rounded-full text-label-sm font-label-sm font-semibold bg-primary text-on-primary whitespace-nowrap shadow-xs">
+All (10)
+</button>
+<button class="px-2.5 py-1 rounded-full text-label-sm font-label-sm text-on-surface-variant bg-surface-container hover:bg-surface-container-high whitespace-nowrap transition-colors">
+Conference
+</button>
+<button class="px-2.5 py-1 rounded-full text-label-sm font-label-sm text-on-surface-variant bg-surface-container hover:bg-surface-container-high whitespace-nowrap transition-colors">
+Corporate
+</button>
+<button class="px-2.5 py-1 rounded-full text-label-sm font-label-sm text-on-surface-variant bg-surface-container hover:bg-surface-container-high whitespace-nowrap transition-colors">
+Workshop
+</button>
+<button class="px-2.5 py-1 rounded-full text-label-sm font-label-sm text-on-surface-variant bg-surface-container hover:bg-surface-container-high whitespace-nowrap transition-colors">
+Festival
+</button>
+<button class="px-2.5 py-1 rounded-full text-label-sm font-label-sm text-on-surface-variant bg-surface-container hover:bg-surface-container-high whitespace-nowrap transition-colors">
+Minimal
+</button>
+</div>
+</div>
+<!-- Scrollable 10 Templates List & Design Engine -->
+<div class="flex-1 overflow-y-auto custom-scroll p-4 space-y-4">
+<!-- TEMPLATE 01: EDITORIAL (ACTIVE) -->
+<div class="template-card relative rounded-lg border-2 border-primary ring-2 ring-primary/20 bg-primary-fixed/15 p-3.5 shadow-sm transition-all cursor-pointer hover:border-primary" id="template-card-01" onclick="selectTemplate('01')">
+<div class="flex items-center justify-between mb-2">
+<span class="badge-status px-2 py-0.5 rounded bg-primary-container text-on-primary text-mono-badge font-mono-badge text-[10px] font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">check_circle</span>
+ACTIVE TEMPLATE
+</span>
+<span class="text-mono-badge font-mono-badge text-[11px] text-primary font-semibold">TEMPLATE 01</span>
+</div>
+<!-- Rendered Miniature Event Website (65-70% card area) -->
+<div class="rounded-md border border-[#dac0c4] bg-[#F8F4EF] p-2.5 shadow-xs overflow-hidden mb-3">
+<!-- Mini Nav -->
+<div class="flex items-center justify-between pb-1.5 mb-2 border-b border-[#dac0c4]">
+<div class="flex items-center gap-1.5">
+<div class="w-3.5 h-3.5 rounded bg-[#7A1F3D] text-white text-[7px] font-bold flex items-center justify-center font-mono">A</div>
+<span class="font-bold text-[9px] text-[#7A1F3D] tracking-tight">SUMMIT '27</span>
+</div>
+<div class="flex items-center gap-2 text-[7px] text-[#554245]">
+<span class="font-semibold text-[#7A1F3D]">Home</span>
+<span>Speakers</span>
+<span>Passes</span>
+<span class="px-1.5 py-0.5 rounded bg-[#7A1F3D] text-white font-semibold text-[6px]">Register</span>
+</div>
+</div>
+<!-- Asymmetric Split Hero -->
+<div class="grid grid-cols-12 gap-2 mb-2">
+<div class="col-span-7 flex flex-col justify-between">
+<div>
+<span class="inline-block px-1 py-0.2 rounded text-[6px] font-mono-badge bg-[#ffa5ba]/30 text-[#7A1F3D] font-bold mb-1 border border-[#dac0c4]">ANNUAL FORUM</span>
+<h4 class="text-[11px] font-bold text-[#7A1F3D] leading-tight font-serif">Annual Leadership Summit 2027</h4>
+<p class="text-[7px] text-[#554245] mt-1 leading-snug line-clamp-2">Executive delegates shaping next-generation resilient systems.</p>
+</div>
+<div class="flex items-center gap-1.5 pt-1.5">
+<div class="px-2 py-0.5 rounded bg-[#7A1F3D] text-white text-[7px] font-bold shadow-xs">Get Pass →</div>
+<div class="px-1.5 py-0.5 rounded border border-[#887275] text-[7px] font-medium text-[#1c1c19]">Agenda</div>
+</div>
+</div>
+<div class="col-span-5 relative rounded overflow-hidden border border-[#dac0c4] h-20 shadow-xs">
+<img alt="Keynote" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1UfhM-3NIMicfkqlNy_Vmr7EZ1M7pT3pBoc_v3M8NIp6QKUTrqRNwzit3GETMTuOhkqcnf4DbFIiJOkhKYlGPkXO8nEydeIHf8DDgZDNYWYUaRnuOpOVEbU_uW2uIsxNaaEjJlgeq7Zl1JfzHsZco-ILx0HwIKaC7s3dyARCi2MH3kLHAN7oVYTMwq71GGVJsU0_cpz46zWRh8Ey9eFp72XYyd_GHQsNfr5R5dmvHHqNDZx5i20lyq_bZc"/>
+<div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-1 text-[6px] text-white font-mono">
+Main Auditorium
+</div>
+</div>
+</div>
+<!-- Editorial Speaker Trio Strip -->
+<div class="grid grid-cols-3 gap-1 pt-1.5 border-t border-[#dac0c4]">
+<div class="flex items-center gap-1 bg-[#ffffff] p-1 rounded border border-[#dac0c4]/60">
+<div class="w-4 h-4 rounded-full bg-[#7A1F3D] text-white text-[6px] flex items-center justify-center font-bold shrink-0">RV</div>
+<div class="min-w-0">
+<div class="text-[6px] font-bold text-[#1c1c19] truncate">Dr. Varma</div>
+<div class="text-[5px] text-[#887275] truncate">HyperScale</div>
+</div>
+</div>
+<div class="flex items-center gap-1 bg-[#ffffff] p-1 rounded border border-[#dac0c4]/60">
+<div class="w-4 h-4 rounded-full bg-[#D8A7B1] text-[#7A1F3D] text-[6px] flex items-center justify-center font-bold shrink-0">PS</div>
+<div class="min-w-0">
+<div class="text-[6px] font-bold text-[#1c1c19] truncate">P. Sundaram</div>
+<div class="text-[5px] text-[#887275] truncate">Vertex</div>
+</div>
+</div>
+<div class="flex items-center gap-1 bg-[#ffffff] p-1 rounded border border-[#dac0c4]/60">
+<div class="w-4 h-4 rounded-full bg-[#7A1F3D] text-white text-[6px] flex items-center justify-center font-bold shrink-0">AK</div>
+<div class="min-w-0">
+<div class="text-[6px] font-bold text-[#1c1c19] truncate">A. Kapoor</div>
+<div class="text-[5px] text-[#887275] truncate">Nexus Cloud</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Card Metadata & Palette Swatches -->
+<div class="flex items-center justify-between">
+<h3 class="text-headline-sm font-headline-sm text-primary font-bold">Editorial</h3>
+<div class="flex items-center gap-1">
+<span class="w-3 h-3 rounded-full bg-[#F8F4EF] border border-[#dac0c4]" title="Warm Cream #F8F4EF"></span>
+<span class="w-3 h-3 rounded-full bg-[#7A1F3D] border border-black/20" title="Deep Maroon #7A1F3D"></span>
+<span class="w-3 h-3 rounded-full bg-[#D8A7B1] border border-black/20" title="Soft Rose #D8A7B1"></span>
+</div>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-xs mt-1 leading-normal">
+Warm cream (#F8F4EF) + deep maroon (#7A1F3D) + soft rose (#D8A7B1). Large serif hero with editorial photography, split composition, vertical timeline, luxury magazine aesthetic.
+</p>
+<div class="flex flex-wrap items-center gap-1.5 mt-2">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Split Composition</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Magazine Serif</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Luxury Editorial</span>
+</div>
+</div>
+<!-- TEMPLATE 02: EXECUTIVE -->
+<div class="template-card group relative rounded-lg border border-outline-variant hover:border-primary/60 bg-surface-container-lowest p-3.5 shadow-xs hover:shadow-sm transition-all cursor-pointer" id="template-card-02" onclick="selectTemplate('02')">
+<div class="flex items-center justify-between mb-2">
+<span class="badge-status text-label-sm font-label-sm font-semibold text-on-surface-variant">Corporate / Board</span>
+<span class="text-mono-badge font-mono-badge text-[11px] text-outline">TEMPLATE 02</span>
+</div>
+<!-- Rendered Miniature Event Website -->
+<div class="rounded-md border border-[#162847] bg-[#0F1E36] text-white p-2.5 shadow-xs overflow-hidden mb-3">
+<!-- Mini Nav -->
+<div class="flex items-center justify-between pb-1.5 mb-2 border-b border-white/10">
+<div class="flex items-center gap-1.5">
+<div class="w-3.5 h-3.5 rounded bg-[#D4AF37] text-[#0F1E36] text-[7px] font-bold flex items-center justify-center font-mono">B</div>
+<span class="font-bold text-[9px] text-[#D4AF37] tracking-wider uppercase">EXECUTIVE FORUM</span>
+</div>
+<div class="flex items-center gap-2 text-[7px] text-white/70">
+<span>Symposium</span>
+<span>Board</span>
+<span class="px-1.5 py-0.5 rounded bg-[#D4AF37] text-[#0F1E36] font-bold text-[6px]">Join VIP</span>
+</div>
+</div>
+<!-- Split Corporate Hero with Gold Rule -->
+<div class="grid grid-cols-12 gap-2 mb-2">
+<div class="col-span-7 flex flex-col justify-between">
+<div>
+<div class="w-6 h-0.5 bg-[#D4AF37] mb-1"></div>
+<span class="text-[6px] font-mono tracking-widest text-[#D4AF37] uppercase">GLOBAL BOARDROOM 2027</span>
+<h4 class="text-[10px] font-bold text-white mt-0.5 leading-tight">Deterministic Capital &amp; Enterprise Governance</h4>
+</div>
+<div class="flex items-center gap-1.5 pt-1.5">
+<span class="px-2 py-0.5 rounded-xs bg-[#D4AF37] text-[#0F1E36] font-bold text-[7px]">Request Invite</span>
+<span class="text-[6px] text-white/60 font-mono">Deliberative Closed Session</span>
+</div>
+</div>
+<div class="col-span-5 relative rounded overflow-hidden border border-[#D4AF37]/30 h-20 shadow-xs">
+<img alt="Corporate Stage" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1UrZTilMOWySmqIYXmmmi61WxqJl4stNDtw3nFsu-_3dN5j-FwOXP-tVoObAnR51M1nS_PoQZwsgeFW5MRQLRJTFFnkTe2WuuFSiWcnOnLIYpSCyVJgQxjflx4_Z5qQzV3Vy0atuKqRxgYPWD9v5xAwHwUIP4926HQhHh8G1JQQssVvenszAg9kGxN1d-uDHzL4I89GcCt7t3JXwcjkUkmwW-xTdMVGak7JzUrXcCVcBBAegB_O65qsAVs"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#0F1E36] via-transparent to-transparent"></div>
+</div>
+</div>
+<!-- 3-Column Leadership Grid -->
+<div class="grid grid-cols-3 gap-1 pt-1.5 border-t border-white/10">
+<div class="bg-white/5 p-1 rounded border border-white/10 text-center">
+<div class="w-3.5 h-3.5 rounded-full bg-[#D4AF37] text-[#0F1E36] text-[6px] font-bold mx-auto flex items-center justify-center">1</div>
+<div class="text-[6px] font-bold text-white mt-0.5 truncate">Keynote Panel</div>
+</div>
+<div class="bg-white/5 p-1 rounded border border-white/10 text-center">
+<div class="w-3.5 h-3.5 rounded-full bg-white/20 text-white text-[6px] font-bold mx-auto flex items-center justify-center">2</div>
+<div class="text-[6px] font-bold text-white mt-0.5 truncate">Closed Session</div>
+</div>
+<div class="bg-white/5 p-1 rounded border border-white/10 text-center">
+<div class="w-3.5 h-3.5 rounded-full bg-white/20 text-white text-[6px] font-bold mx-auto flex items-center justify-center">3</div>
+<div class="text-[6px] font-bold text-white mt-0.5 truncate">Investor Dinner</div>
+</div>
+</div>
+</div>
+<!-- Card Metadata & Palette Swatches -->
+<div class="flex items-center justify-between">
+<h3 class="text-headline-sm font-headline-sm text-on-surface group-hover:text-primary font-bold transition-colors">Executive</h3>
+<div class="flex items-center gap-1">
+<span class="w-3 h-3 rounded-full bg-[#0F1E36] border border-white/20" title="Deep Navy #0F1E36"></span>
+<span class="w-3 h-3 rounded-full bg-[#FFFFFF] border border-black/20" title="Crisp White #FFFFFF"></span>
+<span class="w-3 h-3 rounded-full bg-[#D4AF37] border border-black/20" title="Muted Gold #D4AF37"></span>
+</div>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-xs mt-1 leading-normal">
+Deep navy (#0F1E36) + crisp white + muted gold (#D4AF37). Split-screen corporate hero with gold accent rules, 3-column leadership grid, navy/gold CTA banner, enterprise forum feel.
+</p>
+<div class="flex flex-wrap items-center gap-1.5 mt-2">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Corporate Split</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Muted Gold</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Boardroom</span>
+</div>
+</div>
+<!-- TEMPLATE 03: MODERN CONFERENCE -->
+<div class="template-card group relative rounded-lg border border-outline-variant hover:border-primary/60 bg-surface-container-lowest p-3.5 shadow-xs hover:shadow-sm transition-all cursor-pointer" id="template-card-03" onclick="selectTemplate('03')">
+<div class="flex items-center justify-between mb-2">
+<span class="badge-status text-label-sm font-label-sm font-semibold text-on-surface-variant">Tech &amp; Multi-Track</span>
+<span class="text-mono-badge font-mono-badge text-[11px] text-outline">TEMPLATE 03</span>
+</div>
+<!-- Rendered Miniature Event Website -->
+<div class="rounded-md border border-[#232733] bg-[#121212] text-white p-2.5 shadow-xs overflow-hidden mb-3">
+<!-- Mini Nav -->
+<div class="flex items-center justify-between pb-1.5 mb-2 border-b border-white/10">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded bg-[#FF6B35]"></span>
+<span class="font-black text-[9px] text-[#FF6B35] tracking-tight font-mono">DEV/CON '27</span>
+</div>
+<div class="flex items-center gap-1.5 text-[7px]">
+<span class="text-[#2F80ED] font-mono font-bold">TRACKS [04]</span>
+<span class="px-1.5 py-0.5 rounded bg-[#FF6B35] text-white font-bold text-[6px]">TICKETS</span>
+</div>
+</div>
+<!-- Dark High-Contrast Hero with Electric Orange Badges -->
+<div class="relative p-2 rounded bg-[#1A1D24] border border-[#FF6B35]/30 mb-2 overflow-hidden">
+<div class="absolute -right-4 -bottom-4 w-14 h-14 bg-[#FF6B35]/20 rounded-full blur-sm"></div>
+<div class="flex items-center gap-1 mb-1">
+<span class="px-1 py-0.2 rounded text-[6px] font-mono bg-[#FF6B35] text-white font-bold">HIGH VELOCITY</span>
+<span class="px-1 py-0.2 rounded text-[6px] font-mono bg-[#2F80ED] text-white font-bold">48 SESSIONS</span>
+</div>
+<h4 class="text-[10px] font-black text-white leading-tight uppercase font-mono">Scale Tomorrow: Architecture Summit</h4>
+<div class="flex items-center justify-between mt-2 pt-1 border-t border-white/10 text-[6px]">
+<span class="text-[#FF6B35] font-mono font-semibold">12-13 MAR • 4 TRACKS</span>
+<span class="text-white/70 font-mono">2,000+ DEVS</span>
+</div>
+</div>
+<!-- Modular Staggered Speaker / Agenda Blocks -->
+<div class="grid grid-cols-3 gap-1">
+<div class="bg-[#1E232E] p-1 rounded border-l-2 border-[#FF6B35]">
+<div class="text-[6px] font-mono text-[#FF6B35] font-bold">STAGE 01</div>
+<div class="text-[6px] text-white font-medium truncate">AI Inference</div>
+</div>
+<div class="bg-[#1E232E] p-1 rounded border-l-2 border-[#2F80ED]">
+<div class="text-[6px] font-mono text-[#2F80ED] font-bold">STAGE 02</div>
+<div class="text-[6px] text-white font-medium truncate">Edge Kernels</div>
+</div>
+<div class="bg-[#1E232E] p-1 rounded border-l-2 border-white/40">
+<div class="text-[6px] font-mono text-white/70 font-bold">STAGE 03</div>
+<div class="text-[6px] text-white font-medium truncate">Datastores</div>
+</div>
+</div>
+</div>
+<!-- Card Metadata & Palette Swatches -->
+<div class="flex items-center justify-between">
+<h3 class="text-headline-sm font-headline-sm text-on-surface group-hover:text-primary font-bold transition-colors">Modern Conference</h3>
+<div class="flex items-center gap-1">
+<span class="w-3 h-3 rounded-full bg-[#121212] border border-white/20" title="Near Black #121212"></span>
+<span class="w-3 h-3 rounded-full bg-[#FF6B35] border border-black/20" title="Electric Orange #FF6B35"></span>
+<span class="w-3 h-3 rounded-full bg-[#2F80ED] border border-black/20" title="Bright Blue #2F80ED"></span>
+</div>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-xs mt-1 leading-normal">
+Near Black (#121212) + electric orange (#FF6B35) + bright blue (#2F80ED). High-contrast dark hero, bright orange angled accents, floating meta badges, staggered speaker tiles, modular agenda blocks.
+</p>
+<div class="flex flex-wrap items-center gap-1.5 mt-2">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Electric Orange</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">High Velocity</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Multi-Track</span>
+</div>
+</div>
+<!-- TEMPLATE 04: MINIMAL -->
+<div class="template-card group relative rounded-lg border border-outline-variant hover:border-primary/60 bg-surface-container-lowest p-3.5 shadow-xs hover:shadow-sm transition-all cursor-pointer" id="template-card-04" onclick="selectTemplate('04')">
+<div class="flex items-center justify-between mb-2">
+<span class="badge-status text-label-sm font-label-sm font-semibold text-on-surface-variant">Clean &amp; Spacious</span>
+<span class="text-mono-badge font-mono-badge text-[11px] text-outline">TEMPLATE 04</span>
+</div>
+<!-- Rendered Miniature Event Website -->
+<div class="rounded-md border border-[#e5dfd8] bg-[#FAF8F5] text-[#171717] p-2.5 shadow-xs overflow-hidden mb-3">
+<!-- Mini Nav -->
+<div class="flex items-center justify-between pb-1.5 mb-2.5 border-b border-[#ece6de]">
+<span class="font-medium text-[8px] tracking-widest text-[#171717] uppercase">FORUM TWENTY SEVEN</span>
+<div class="flex items-center gap-2 text-[7px] text-[#554245]">
+<span>Details</span>
+<span>Schedule</span>
+<span class="text-[#C65D45] font-medium">Register</span>
+</div>
+</div>
+<!-- Centered Spacious Hero with Terracotta Accent -->
+<div class="text-center py-2 px-1 mb-2">
+<span class="text-[6px] font-mono uppercase tracking-widest text-[#887275]">INDEPENDENT SUMMIT</span>
+<h4 class="text-[11px] font-serif font-light text-[#171717] tracking-tight leading-tight mt-1 max-w-[240px] mx-auto">
+Clarity in Complexity: Engineering for the Next Decade
+</h4>
+<div class="mt-2">
+<span class="inline-block px-3 py-1 rounded-full bg-[#C65D45] text-white text-[7px] font-medium shadow-xs">
+Register Attendance
+</span>
+</div>
+</div>
+<!-- Clean Linear Agenda Line -->
+<div class="flex justify-between items-center px-2 py-1 bg-white rounded border border-[#ece6de] text-[6px]">
+<span class="font-mono text-[#887275]">SESSION 01</span>
+<span class="font-semibold text-[#171717]">Keynote Address</span>
+<span class="font-mono text-[#C65D45]">09:00 AM</span>
+</div>
+</div>
+<!-- Card Metadata & Palette Swatches -->
+<div class="flex items-center justify-between">
+<h3 class="text-headline-sm font-headline-sm text-on-surface group-hover:text-primary font-bold transition-colors">Minimal</h3>
+<div class="flex items-center gap-1">
+<span class="w-3 h-3 rounded-full bg-[#FAF8F5] border border-black/20" title="Warm White #FAF8F5"></span>
+<span class="w-3 h-3 rounded-full bg-[#171717] border border-black/20" title="Black #171717"></span>
+<span class="w-3 h-3 rounded-full bg-[#C65D45] border border-black/20" title="Terracotta #C65D45"></span>
+</div>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-xs mt-1 leading-normal">
+Warm White (#FAF8F5) + Black (#171717) + Terracotta (#C65D45) + soft sand. Generous luxurious whitespace, giant serif headline, restrained single hero photo, clean linear agenda, centered terracotta pill button.
+</p>
+<div class="flex flex-wrap items-center gap-1.5 mt-2">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Luxurious Whitespace</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Single Column</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Terracotta Pill</span>
+</div>
+</div>
+<!-- TEMPLATE 05: BOLD EVENT -->
+<div class="template-card group relative rounded-lg border border-outline-variant hover:border-primary/60 bg-surface-container-lowest p-3.5 shadow-xs hover:shadow-sm transition-all cursor-pointer" id="template-card-05" onclick="selectTemplate('05')">
+<div class="flex items-center justify-between mb-2">
+<span class="badge-status text-label-sm font-label-sm font-semibold text-on-surface-variant">Festival &amp; Energy</span>
+<span class="text-mono-badge font-mono-badge text-[11px] text-outline">TEMPLATE 05</span>
+</div>
+<!-- Rendered Miniature Event Website -->
+<div class="rounded-md border border-[#581c87] bg-[#4C1D95] text-white p-2.5 shadow-xs overflow-hidden mb-3 relative">
+<div class="absolute -top-6 -right-6 w-16 h-16 bg-[#EC4899] rounded-full blur-md opacity-40"></div>
+<!-- Mini Nav -->
+<div class="flex items-center justify-between pb-1.5 mb-2 border-b border-white/20">
+<div class="flex items-center gap-1">
+<span class="px-1.5 py-0.2 rounded bg-[#FACC15] text-[#4C1D95] text-[7px] font-black">BOLD</span>
+<span class="font-black text-[9px] text-white tracking-tight">FEST '27</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-[#EC4899] text-white text-[6px] font-black">PASSES OPEN</span>
+</div>
+<!-- Explosive Hero with Diagonal Color Blocks -->
+<div class="grid grid-cols-12 gap-1.5 items-center mb-2">
+<div class="col-span-8 space-y-1">
+<span class="px-1 py-0.2 rounded bg-[#FF6B6B] text-white text-[6px] font-extrabold">LIVE IN CHENNAI</span>
+<h4 class="text-[11px] font-black text-white leading-tight uppercase">CREATE. DISRUPT. EXPAND.</h4>
+<div class="flex items-center gap-1 pt-1">
+<span class="px-2 py-0.5 rounded bg-[#FACC15] text-[#4C1D95] font-black text-[7px]">Get Festival Pass</span>
+</div>
+</div>
+<div class="col-span-4 bg-[#EC4899] p-2 rounded text-center text-white transform rotate-1 shadow-sm">
+<div class="text-[6px] font-bold text-white/80">VIP TICKET</div>
+<div class="text-[9px] font-black text-[#FACC15]">₹4,999</div>
+</div>
+</div>
+<!-- Vibrant Multicolored Speaker Tiles -->
+<div class="grid grid-cols-4 gap-1">
+<div class="bg-[#EC4899] p-1 rounded text-center text-[6px] font-bold text-white truncate">Keynotes</div>
+<div class="bg-[#FF6B6B] p-1 rounded text-center text-[6px] font-bold text-white truncate">Workshops</div>
+<div class="bg-[#FACC15] p-1 rounded text-center text-[6px] font-black text-[#4C1D95] truncate">Expos</div>
+<div class="bg-white/20 p-1 rounded text-center text-[6px] font-bold text-white truncate">Afterparty</div>
+</div>
+</div>
+<!-- Card Metadata & Palette Swatches -->
+<div class="flex items-center justify-between">
+<h3 class="text-headline-sm font-headline-sm text-on-surface group-hover:text-primary font-bold transition-colors">Bold Event</h3>
+<div class="flex items-center gap-1">
+<span class="w-3 h-3 rounded-full bg-[#4C1D95] border border-white/20" title="Deep Purple #4C1D95"></span>
+<span class="w-3 h-3 rounded-full bg-[#EC4899] border border-black/20" title="Hot Pink #EC4899"></span>
+<span class="w-3 h-3 rounded-full bg-[#FF6B6B] border border-black/20" title="Coral #FF6B6B"></span>
+<span class="w-3 h-3 rounded-full bg-[#FACC15] border border-black/20" title="Bright Yellow #FACC15"></span>
+</div>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-xs mt-1 leading-normal">
+Deep Purple (#4C1D95) + Hot Pink (#EC4899) + Coral (#FF6B6B) + Bright Yellow (#FACC15). Explosive colorful hero, diagonal color blocks, vibrant multicolored speaker tiles, energetic festival-like atmosphere.
+</p>
+<div class="flex flex-wrap items-center gap-1.5 mt-2">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Explosive Energy</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Chunky Ticket</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Festival Atmosphere</span>
+</div>
+</div>
+<!-- TEMPLATE 06: PHOTO FIRST -->
+<div class="template-card group relative rounded-lg border border-outline-variant hover:border-primary/60 bg-surface-container-lowest p-3.5 shadow-xs hover:shadow-sm transition-all cursor-pointer" id="template-card-06" onclick="selectTemplate('06')">
+<div class="flex items-center justify-between mb-2">
+<span class="badge-status text-label-sm font-label-sm font-semibold text-on-surface-variant">Full-Bleed Media</span>
+<span class="text-mono-badge font-mono-badge text-[11px] text-outline">TEMPLATE 06</span>
+</div>
+<!-- Rendered Miniature Event Website -->
+<div class="rounded-md border border-[#262626] bg-[#171717] text-white p-2.5 shadow-xs overflow-hidden mb-3">
+<!-- Full-Bleed Keynote Photography Overlay -->
+<div class="relative rounded overflow-hidden border border-white/10 h-24 mb-2 shadow-sm">
+<img alt="Photo First Keynote" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1XBBFbXo4Sbcp1Lh2D9X8DRxB3wNxdseBb66n60gYwUFqHQVRHb5beRmJVXWvpyb1vk0RkrNLdRTBlTUv5BAK8zOgt-FA5Xdj1YX9dHaUo4kFs_Ywt9VgwUelyTjwFIVinjIZKwITzJk1SZUVIbbLSa8X_MAmN9-BSPUXl1d6qNoVEK50HPL3qzcwjgvqkOn4vcYJm0vZDRQAxKD3xBLxxZyik2j7DmccDP2tE98kbqxXY6d3Ia-tiEKw"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-between p-2">
+<div class="flex items-center justify-between">
+<span class="px-1.5 py-0.5 rounded text-[6px] font-mono bg-[#F97316] text-white font-bold">LIVE STAGE CINEMA</span>
+<span class="text-[7px] text-[#FFF7ED] font-medium">MAR 12–13</span>
+</div>
+<div>
+<h4 class="text-[11px] font-bold text-white leading-tight">Scale The Horizon: Keynote 2027</h4>
+<div class="flex items-center gap-2 mt-1">
+<span class="px-2 py-0.5 rounded bg-white text-[#171717] text-[6px] font-bold">Reserve Seat</span>
+<span class="text-[6px] text-white/80 font-mono">Chennai Trade Centre</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Speaker Collage Grid -->
+<div class="grid grid-cols-3 gap-1">
+<div class="h-7 rounded overflow-hidden relative border border-white/10">
+<img alt="Speaker 1" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1WyJDpDt9R_qETeJFUpO5vX04B9PEZtiEwkAL6KS5pdFBhH4r5PTmXkrvDeKtp7Ojl4_gRCPpR0IWz1Zj3Pd1Ey7v2L0U50Y0cXv36fe--YGZzqfdofyvACBL6aZNTSRGhpWhwwPwQ0AaINwVGjXnrX-0ho8hpqUDyIGWtOLtugi10xLS-ajiAZhJBAlXxr13LDo9-eRAfJgw626ErN7snx9FE5BNhToDy5Lx6YKt5FV6C6Z7J3FzQjNqU"/>
+<div class="absolute bottom-0 inset-x-0 bg-black/60 text-[5px] text-center text-white py-0.2 truncate font-mono">Varma</div>
+</div>
+<div class="h-7 rounded overflow-hidden relative border border-white/10">
+<img alt="Speaker 2" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1VWZ7qr7aIquCLIlciMwvKoMf2KJOp6uWa_8qrheKKn_XPc0Y0dVR3NK2bHZFsGVtmwYRVReg5urtj07XjFKaq_BF7zK1_X8YZT08Dk93sR4g5m6Nbo5s52VR5o5TKWnNNWllNO0rWtSajEgF5CTQlEuZb0UxrGBJuR2n1xuEf7JD8uKXOSTYEJADeJRBd6op5hWbVu3YZOw_T87zPh_xzVS7Q1IltWbX21pxv9IFURxkdxnb5OE_mAeg"/>
+<div class="absolute bottom-0 inset-x-0 bg-black/60 text-[5px] text-center text-white py-0.2 truncate font-mono">Priya</div>
+</div>
+<div class="h-7 rounded overflow-hidden relative border border-white/10">
+<img alt="Speaker 3" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1UfhM-3NIMicfkqlNy_Vmr7EZ1M7pT3pBoc_v3M8NIp6QKUTrqRNwzit3GETMTuOhkqcnf4DbFIiJOkhKYlGPkXO8nEydeIHf8DDgZDNYWYUaRnuOpOVEbU_uW2uIsxNaaEjJlgeq7Zl1JfzHsZco-ILx0HwIKaC7s3dyARCi2MH3kLHAN7oVYTMwq71GGVJsU0_cpz46zWRh8Ey9eFp72XYyd_GHQsNfr5R5dmvHHqNDZx5i20lyq_bZc"/>
+<div class="absolute bottom-0 inset-x-0 bg-black/60 text-[5px] text-center text-white py-0.2 truncate font-mono">Arjun</div>
+</div>
+</div>
+</div>
+<!-- Card Metadata & Palette Swatches -->
+<div class="flex items-center justify-between">
+<h3 class="text-headline-sm font-headline-sm text-on-surface group-hover:text-primary font-bold transition-colors">Photo First</h3>
+<div class="flex items-center gap-1">
+<span class="w-3 h-3 rounded-full bg-[#171717] border border-white/20" title="Charcoal #171717"></span>
+<span class="w-3 h-3 rounded-full bg-[#F97316] border border-black/20" title="Warm Orange #F97316"></span>
+<span class="w-3 h-3 rounded-full bg-[#FFF7ED] border border-black/20" title="Cream #FFF7ED"></span>
+</div>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-xs mt-1 leading-normal">
+Charcoal (#171717) + Warm Orange (#F97316) + Cream (#FFF7ED). Full-bleed cinematic event photography with dramatic text overlay, photo collage grid, dark immersive human-centric mood.
+</p>
+<div class="flex flex-wrap items-center gap-1.5 mt-2">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Cinematic Photography</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Dramatic Overlay</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Human Centric</span>
+</div>
+</div>
+<!-- TEMPLATE 07: GRID -->
+<div class="template-card group relative rounded-lg border border-outline-variant hover:border-primary/60 bg-surface-container-lowest p-3.5 shadow-xs hover:shadow-sm transition-all cursor-pointer" id="template-card-07" onclick="selectTemplate('07')">
+<div class="flex items-center justify-between mb-2">
+<span class="badge-status text-label-sm font-label-sm font-semibold text-on-surface-variant">Swiss Modular</span>
+<span class="text-mono-badge font-mono-badge text-[11px] text-outline">TEMPLATE 07</span>
+</div>
+<!-- Rendered Miniature Event Website -->
+<div class="rounded-md border-2 border-[#1c1c19] bg-[#F8F4EF] text-[#1c1c19] p-2 shadow-xs overflow-hidden mb-3">
+<!-- Top Swiss Header Bar -->
+<div class="grid grid-cols-12 border-b-2 border-[#1c1c19] text-[7px] font-mono font-bold uppercase">
+<div class="col-span-4 p-1 border-r-2 border-[#1c1c19] bg-[#7A1F3D] text-white">SUMMIT '27</div>
+<div class="col-span-4 p-1 border-r-2 border-[#1c1c19] bg-[#0F766E] text-white">12-13 MAR</div>
+<div class="col-span-4 p-1 bg-[#D4A72C] text-[#1c1c19] text-center">CHENNAI</div>
+</div>
+<!-- Modular Hero Matrix -->
+<div class="grid grid-cols-12 border-b-2 border-[#1c1c19]">
+<div class="col-span-8 p-1.5 border-r-2 border-[#1c1c19] bg-white">
+<div class="text-[6px] font-mono font-bold text-[#7A1F3D]">MODULE [01]</div>
+<h4 class="text-[10px] font-bold font-mono uppercase tracking-tight mt-0.5 leading-tight">Architectural Systems Forum</h4>
+<div class="mt-1 text-[6px] font-mono text-[#554245]">1,200+ Vetted Enterprise Delegates</div>
+</div>
+<div class="col-span-4 p-1.5 bg-[#F8F4EF] flex flex-col justify-between">
+<div class="text-[6px] font-mono">TICKETS</div>
+<div class="p-1 bg-[#1c1c19] text-white text-center font-mono font-bold text-[6px]">REGISTER</div>
+</div>
+</div>
+<!-- 4-Cell Speaker & Venue Grid -->
+<div class="grid grid-cols-4 text-[6px] font-mono">
+<div class="p-1 border-r border-[#1c1c19] bg-white">
+<span class="font-bold">01</span> Varma
+</div>
+<div class="p-1 border-r border-[#1c1c19] bg-white">
+<span class="font-bold">02</span> Priya
+</div>
+<div class="p-1 border-r border-[#1c1c19] bg-white">
+<span class="font-bold">03</span> Kapoor
+</div>
+<div class="p-1 bg-[#0F766E] text-white font-bold text-center">
++45 MORE
+</div>
+</div>
+</div>
+<!-- Card Metadata & Palette Swatches -->
+<div class="flex items-center justify-between">
+<h3 class="text-headline-sm font-headline-sm text-on-surface group-hover:text-primary font-bold transition-colors">Grid</h3>
+<div class="flex items-center gap-1">
+<span class="w-3 h-3 rounded-full bg-[#F8F4EF] border border-[#1c1c19]" title="Cream #F8F4EF"></span>
+<span class="w-3 h-3 rounded-full bg-[#7A1F3D] border border-black/20" title="Maroon #7A1F3D"></span>
+<span class="w-3 h-3 rounded-full bg-[#0F766E] border border-black/20" title="Deep Teal #0F766E"></span>
+<span class="w-3 h-3 rounded-full bg-[#D4A72C] border border-black/20" title="Mustard #D4A72C"></span>
+</div>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-xs mt-1 leading-normal">
+Cream (#F8F4EF) + Maroon (#7A1F3D) + Deep Teal (#0F766E) + Mustard (#D4A72C). Modular Swiss grid blocks, visible geometric borders, 4-cell speaker matrix, structured color blocks.
+</p>
+<div class="flex flex-wrap items-center gap-1.5 mt-2">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Modular Grid</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Swiss Precision</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Geometric Borders</span>
+</div>
+</div>
+<!-- TEMPLATE 08: DARK STAGE -->
+<div class="template-card group relative rounded-lg border border-outline-variant hover:border-primary/60 bg-surface-container-lowest p-3.5 shadow-xs hover:shadow-sm transition-all cursor-pointer" id="template-card-08" onclick="selectTemplate('08')">
+<div class="flex items-center justify-between mb-2">
+<span class="badge-status text-label-sm font-label-sm font-semibold text-on-surface-variant">Keynote Drama</span>
+<span class="text-mono-badge font-mono-badge text-[11px] text-outline">TEMPLATE 08</span>
+</div>
+<!-- Rendered Miniature Event Website -->
+<div class="rounded-md border border-[#4A1024] bg-[#090909] text-white p-2.5 shadow-xs overflow-hidden mb-3 relative">
+<div class="absolute -top-6 -right-6 w-20 h-20 bg-[#C6284A] rounded-full blur-xl opacity-30"></div>
+<!-- Mini Nav -->
+<div class="flex items-center justify-between pb-1.5 mb-2 border-b border-white/10 relative z-10">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-[#C6284A] animate-pulse"></span>
+<span class="font-black text-[9px] text-white tracking-widest">DARK STAGE '27</span>
+</div>
+<span class="px-1.5 py-0.5 rounded bg-[#4A1024] text-[#E4B84A] text-[6px] font-mono font-bold border border-[#C6284A]/40">VIP STAGE</span>
+</div>
+<!-- Dramatic Keynote Stage Centerpiece -->
+<div class="relative rounded bg-gradient-to-b from-[#1a0810] to-[#090909] p-2 border border-[#C6284A]/40 mb-2 z-10">
+<div class="text-[6px] font-mono text-[#E4B84A] tracking-wider uppercase font-bold">THEATER MAIN AUDITORIUM</div>
+<h4 class="text-[10px] font-extrabold text-white tracking-tight leading-tight mt-0.5">The Sovereign Cloud Revolution</h4>
+<div class="flex items-center justify-between mt-2 pt-1 border-t border-white/10 text-[6px]">
+<span class="text-[#C6284A] font-mono font-semibold">6 AUDITORIUM CHANNELS</span>
+<span class="px-2 py-0.5 rounded bg-[#C6284A] text-white font-bold shadow-xs">Stage Access</span>
+</div>
+</div>
+<!-- Illuminated Timeline Nodes -->
+<div class="grid grid-cols-3 gap-1 z-10 relative">
+<div class="bg-[#140a0f] p-1 rounded border border-[#C6284A]/30 text-center">
+<div class="text-[6px] font-mono text-[#E4B84A]">09:00</div>
+<div class="text-[6px] text-white font-semibold truncate">Opening Keynote</div>
+</div>
+<div class="bg-[#140a0f] p-1 rounded border border-[#C6284A]/30 text-center">
+<div class="text-[6px] font-mono text-[#E4B84A]">11:30</div>
+<div class="text-[6px] text-white font-semibold truncate">Founders Track</div>
+</div>
+<div class="bg-[#140a0f] p-1 rounded border border-[#C6284A]/30 text-center">
+<div class="text-[6px] font-mono text-[#E4B84A]">15:00</div>
+<div class="text-[6px] text-white font-semibold truncate">Backstage VIP</div>
+</div>
+</div>
+</div>
+<!-- Card Metadata & Palette Swatches -->
+<div class="flex items-center justify-between">
+<h3 class="text-headline-sm font-headline-sm text-on-surface group-hover:text-primary font-bold transition-colors">Dark Stage</h3>
+<div class="flex items-center gap-1">
+<span class="w-3 h-3 rounded-full bg-[#090909] border border-white/20" title="Near Black #090909"></span>
+<span class="w-3 h-3 rounded-full bg-[#4A1024] border border-black/20" title="Deep Maroon #4A1024"></span>
+<span class="w-3 h-3 rounded-full bg-[#C6284A] border border-black/20" title="Crimson #C6284A"></span>
+<span class="w-3 h-3 rounded-full bg-[#E4B84A] border border-black/20" title="Gold #E4B84A"></span>
+</div>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-xs mt-1 leading-normal">
+Near Black (#090909) + Deep Maroon (#4A1024) + Crimson (#C6284A) + Gold (#E4B84A). Dramatic keynote auditorium stage lighting, glowing crimson accent rules, illuminated dark timeline, VIP backstage feel.
+</p>
+<div class="flex flex-wrap items-center gap-1.5 mt-2">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Dramatic Theater</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Crimson Lighting</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Backstage VIP</span>
+</div>
+</div>
+<!-- TEMPLATE 09: CREATIVE WORKSHOP -->
+<div class="template-card group relative rounded-lg border border-outline-variant hover:border-primary/60 bg-surface-container-lowest p-3.5 shadow-xs hover:shadow-sm transition-all cursor-pointer" id="template-card-09" onclick="selectTemplate('09')">
+<div class="flex items-center justify-between mb-2">
+<span class="badge-status text-label-sm font-label-sm font-semibold text-on-surface-variant">Interactive Lab</span>
+<span class="text-mono-badge font-mono-badge text-[11px] text-outline">TEMPLATE 09</span>
+</div>
+<!-- Rendered Miniature Event Website -->
+<div class="rounded-md border border-[#bae6fd] bg-[#FFF7ED] text-[#1c1c19] p-2.5 shadow-xs overflow-hidden mb-3">
+<!-- Mini Nav -->
+<div class="flex items-center justify-between pb-1.5 mb-2 border-b border-[#fed7aa]">
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded-full bg-[#38BDF8] flex items-center justify-center text-white text-[7px] font-bold">✦</span>
+<span class="font-bold text-[9px] text-[#0369a1]">WORKSHOP LABS</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-[#34D399] text-[#064e3b] font-bold text-[6px]">Hands-on</span>
+</div>
+<!-- Playful Rounded Blocks Hero -->
+<div class="p-2 rounded-xl bg-white border border-[#bae6fd] mb-2 shadow-xs">
+<div class="flex items-center gap-1 mb-1">
+<span class="px-1.5 py-0.2 rounded-full bg-[#38BDF8]/20 text-[#0284c7] font-bold text-[6px]">2-DAY INTENSIVE</span>
+<span class="px-1.5 py-0.2 rounded-full bg-[#FB7185]/20 text-[#e11d48] font-bold text-[6px]">LIMITED TO 150</span>
+</div>
+<h4 class="text-[10px] font-bold text-[#1c1c19] leading-tight">Systems Architecture Masterclasses</h4>
+<div class="flex items-center justify-between mt-2 pt-1 border-t border-[#f1f5f9]">
+<div class="flex -space-x-1.5">
+<div class="w-4 h-4 rounded-full bg-[#38BDF8] border border-white text-white text-[5px] flex items-center justify-center font-bold">1</div>
+<div class="w-4 h-4 rounded-full bg-[#34D399] border border-white text-white text-[5px] flex items-center justify-center font-bold">2</div>
+<div class="w-4 h-4 rounded-full bg-[#FB7185] border border-white text-white text-[5px] flex items-center justify-center font-bold">3</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-[#FB7185] text-white font-bold text-[6px]">Apply to Join</span>
+</div>
+</div>
+<!-- Workshop Agenda Cards Strip -->
+<div class="grid grid-cols-2 gap-1.5">
+<div class="p-1 rounded-lg bg-[#f0f9ff] border border-[#bae6fd]">
+<div class="text-[6px] font-bold text-[#0284c7]">Lab 01: Low Latency</div>
+<div class="text-[5px] text-[#64748b]">Hands-on C++ Profiling</div>
+</div>
+<div class="p-1 rounded-lg bg-[#ecfdf5] border border-[#a7f3d0]">
+<div class="text-[6px] font-bold text-[#059669]">Lab 02: Consensus</div>
+<div class="text-[5px] text-[#64748b]">Raft Simulation Engine</div>
+</div>
+</div>
+</div>
+<!-- Card Metadata & Palette Swatches -->
+<div class="flex items-center justify-between">
+<h3 class="text-headline-sm font-headline-sm text-on-surface group-hover:text-primary font-bold transition-colors">Creative Workshop</h3>
+<div class="flex items-center gap-1">
+<span class="w-3 h-3 rounded-full bg-[#38BDF8] border border-black/20" title="Sky Blue #38BDF8"></span>
+<span class="w-3 h-3 rounded-full bg-[#34D399] border border-black/20" title="Mint #34D399"></span>
+<span class="w-3 h-3 rounded-full bg-[#FB7185] border border-black/20" title="Coral #FB7185"></span>
+<span class="w-3 h-3 rounded-full bg-[#FFF7ED] border border-black/20" title="Cream #FFF7ED"></span>
+</div>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-xs mt-1 leading-normal">
+Sky Blue (#38BDF8) + Mint (#34D399) + Coral (#FB7185) + Cream (#FFF7ED). Playful yet professional, rounded visual blocks, colorful circular speaker avatars, workshop agenda cards, pastel accents.
+</p>
+<div class="flex flex-wrap items-center gap-1.5 mt-2">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Rounded Blocks</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Pastel Accents</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Interactive Lab</span>
+</div>
+</div>
+<!-- TEMPLATE 10: FESTIVAL -->
+<div class="template-card group relative rounded-lg border border-outline-variant hover:border-primary/60 bg-surface-container-lowest p-3.5 shadow-xs hover:shadow-sm transition-all cursor-pointer" id="template-card-10" onclick="selectTemplate('10')">
+<div class="flex items-center justify-between mb-2">
+<span class="badge-status text-label-sm font-label-sm font-semibold text-on-surface-variant">Outdoor &amp; Expo</span>
+<span class="text-mono-badge font-mono-badge text-[11px] text-outline">TEMPLATE 10</span>
+</div>
+<!-- Rendered Miniature Event Website -->
+<div class="rounded-md border border-[#065f46] bg-[#064E3B] text-white p-2.5 shadow-xs overflow-hidden mb-3 relative">
+<!-- Mini Nav -->
+<div class="flex items-center justify-between pb-1.5 mb-2 border-b border-white/20">
+<div class="flex items-center gap-1">
+<span class="font-black text-[9px] text-[#FACC15] tracking-tight font-mono">OPEN-AIR '27</span>
+<span class="px-1 py-0.2 rounded bg-[#F97316] text-white text-[6px] font-bold">SUMMIT EXPO</span>
+</div>
+<span class="px-1.5 py-0.5 rounded bg-[#EC4899] text-white text-[6px] font-bold">3 STAGES</span>
+</div>
+<!-- Bold Vivid Green Hero -->
+<div class="p-2 rounded bg-[#043b2c] border border-[#10b981]/30 mb-2">
+<div class="flex items-center gap-1 mb-1">
+<span class="px-1.5 py-0.2 rounded bg-[#F97316] text-white font-black text-[6px]">LIVE FESTIVAL</span>
+<span class="text-[6px] text-[#FACC15] font-mono font-bold">MARCH 12–13</span>
+</div>
+<h4 class="text-[10px] font-black text-white leading-tight uppercase font-sans">Decentralized Tech Outdoor Forum</h4>
+<div class="flex items-center justify-between mt-2 pt-1 border-t border-white/10">
+<span class="text-[6px] font-mono text-white/80">Trade Centre Arena</span>
+<span class="px-2 py-0.5 rounded bg-[#FACC15] text-[#064E3B] font-black text-[7px] shadow-xs">Grab Passes</span>
+</div>
+</div>
+<!-- Horizontal Lineup Timetable Blocks -->
+<div class="grid grid-cols-3 gap-1">
+<div class="bg-[#043b2c] p-1 rounded border-t-2 border-[#F97316] text-center">
+<div class="text-[6px] font-black text-[#FACC15]">SOLAR STAGE</div>
+<div class="text-[5px] text-white/90 truncate">24 Talks</div>
+</div>
+<div class="bg-[#043b2c] p-1 rounded border-t-2 border-[#EC4899] text-center">
+<div class="text-[6px] font-black text-[#EC4899]">ECO PAVILION</div>
+<div class="text-[5px] text-white/90 truncate">Demo Pods</div>
+</div>
+<div class="bg-[#043b2c] p-1 rounded border-t-2 border-[#FACC15] text-center">
+<div class="text-[6px] font-black text-white">NIGHT EXPO</div>
+<div class="text-[5px] text-white/90 truncate">Networking</div>
+</div>
+</div>
+</div>
+<!-- Card Metadata & Palette Swatches -->
+<div class="flex items-center justify-between">
+<h3 class="text-headline-sm font-headline-sm text-on-surface group-hover:text-primary font-bold transition-colors">Festival</h3>
+<div class="flex items-center gap-1">
+<span class="w-3 h-3 rounded-full bg-[#064E3B] border border-white/20" title="Deep Green #064E3B"></span>
+<span class="w-3 h-3 rounded-full bg-[#F97316] border border-black/20" title="Orange #F97316"></span>
+<span class="w-3 h-3 rounded-full bg-[#FACC15] border border-black/20" title="Yellow #FACC15"></span>
+<span class="w-3 h-3 rounded-full bg-[#EC4899] border border-black/20" title="Pink #EC4899"></span>
+</div>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-xs mt-1 leading-normal">
+Deep Green (#064E3B) + Orange (#F97316) + Yellow (#FACC15) + Pink (#EC4899). Bold outdoor event vibes, vivid green hero with energetic orange badge, horizontal artist/speaker lineup, colorful timetable blocks.
+</p>
+<div class="flex flex-wrap items-center gap-1.5 mt-2">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Outdoor Expo</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Vivid Green</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-badge bg-surface-container text-on-surface-variant border border-outline-variant">Horizontal Lineup</span>
+</div>
+</div>
+<!-- ========================================== -->
+<!-- COLLAPSIBLE DESIGN CONTROLS SECTION        -->
+<!-- ========================================== -->
+<div class="pt-2 border-t border-outline-variant space-y-2">
+<div class="flex items-center justify-between text-label-sm font-label-sm font-semibold text-on-surface-variant uppercase tracking-wider px-1">
+<span>Design Customization</span>
+<span class="text-mono-badge font-mono-badge text-[10px] text-outline">GLOBAL TOKENS</span>
+</div>
+<!-- Accordion 1: Brand Colors -->
+<div class="rounded border border-outline-variant bg-surface-container-lowest overflow-hidden">
+<button class="w-full p-2.5 flex items-center justify-between text-left hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[16px]">palette</span>
+<span class="text-label-md font-label-md font-semibold text-on-surface">Brand Colors</span>
+</div>
+<span class="material-symbols-outlined text-[16px] text-outline">expand_more</span>
+</button>
+<div class="p-3 bg-surface border-t border-outline-variant space-y-2.5">
+<div>
+<div class="text-[11px] font-label-sm text-on-surface-variant mb-1 flex justify-between">
+<span>Primary Accent</span>
+<span class="font-mono-badge text-[10px] text-outline" id="active-token-hex">#7A1F3D</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded bg-[#7A1F3D] border border-outline cursor-pointer shadow-xs" title="ARAM Maroon"></div>
+<div class="w-6 h-6 rounded bg-[#0F1E36] border border-outline-variant cursor-pointer" title="Navy"></div>
+<div class="w-6 h-6 rounded bg-[#FF6B35] border border-outline-variant cursor-pointer" title="Orange"></div>
+<div class="w-6 h-6 rounded bg-[#C65D45] border border-outline-variant cursor-pointer" title="Terracotta"></div>
+<button class="text-label-sm font-label-sm text-primary hover:underline ml-auto">+ Custom</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Accordion 2: Typography & Pairings -->
+<div class="rounded border border-outline-variant bg-surface-container-lowest overflow-hidden">
+<button class="w-full p-2.5 flex items-center justify-between text-left hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[16px]">text_fields</span>
+<span class="text-label-md font-label-md font-semibold text-on-surface">Typography &amp; Pairings</span>
+</div>
+<span class="material-symbols-outlined text-[16px] text-outline">expand_more</span>
+</button>
+<div class="p-3 bg-surface border-t border-outline-variant space-y-2">
+<div class="flex items-center justify-between p-2 rounded bg-surface-container-lowest border border-outline-variant">
+<div>
+<div class="text-label-md font-label-md font-semibold text-on-surface">Plus Jakarta Sans</div>
+<div class="text-body-sm font-body-sm text-on-surface-variant text-[11px]">Headings • Bold &amp; Modern</div>
+</div>
+<span class="text-mono-badge font-mono-badge text-[10px] px-1.5 py-0.5 rounded bg-surface-container">Aa</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded bg-surface-container-lowest border border-outline-variant">
+<div>
+<div class="text-label-md font-label-md font-semibold text-on-surface">Inter &amp; JetBrains Mono</div>
+<div class="text-body-sm font-body-sm text-on-surface-variant text-[11px]">Body &amp; Schedule Telemetry</div>
+</div>
+<span class="text-mono-badge font-mono-badge text-[10px] px-1.5 py-0.5 rounded bg-surface-container">01</span>
+</div>
+</div>
+</div>
+<!-- Accordion 3: Layout & Buttons -->
+<div class="rounded border border-outline-variant bg-surface-container-lowest overflow-hidden">
+<button class="w-full p-2.5 flex items-center justify-between text-left hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[16px]">aspect_ratio</span>
+<span class="text-label-md font-label-md font-semibold text-on-surface">Buttons &amp; Radii</span>
+</div>
+<span class="material-symbols-outlined text-[16px] text-outline">expand_more</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Template Bottom Apply Bar -->
+<div class="p-3 bg-surface-container-lowest border-t border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-1.5 text-label-sm font-label-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-emerald-600 text-[16px]">check</span>
+<span id="canvas-status-info">Active: Editorial (01)</span>
+</div>
+<button class="px-3 py-1.5 bg-surface border border-outline-variant hover:border-primary text-primary rounded text-label-sm font-label-sm font-semibold transition-colors" onclick="selectTemplate('01')">
+Reset to Default
+</button>
+</div>
+</aside>
+</div>
+<script>
+window.selectTemplate = function(id) {
+  var templates = {
+    '01': { name: 'Editorial', tag: 'ANNUAL GLOBAL FORUM', bg: '#fdf9f4', heroBg: 'bg-gradient-to-b from-[#fdf9f4] to-[#f7f3ee]', text: '#1c1c19', primary: '#5c0427', primaryContainer: '#7a1f3d', fontH1: 'font-headline-xl font-extrabold', cardBg: '#ffffff', tokenHex: '#7A1F3D' },
+    '02': { name: 'Executive', tag: 'GLOBAL BOARDROOM SYMPOSIUM', bg: '#0F1E36', heroBg: 'bg-gradient-to-b from-[#0F1E36] to-[#0A1424]', text: '#ffffff', primary: '#D4AF37', primaryContainer: '#D4AF37', fontH1: 'font-headline-xl font-bold tracking-normal', cardBg: '#162847', tokenHex: '#D4AF37' },
+    '03': { name: 'Modern Conference', tag: 'HIGH VELOCITY TECH SUMMIT', bg: '#14171F', heroBg: 'bg-[#14171F]', text: '#ffffff', primary: '#FF6B35', primaryContainer: '#FF6B35', fontH1: 'font-headline-xl font-black uppercase tracking-tight', cardBg: '#1D2230', tokenHex: '#FF6B35' },
+    '04': { name: 'Minimal', tag: 'INDEPENDENT LEADERSHIP FORUM', bg: '#FFFFFF', heroBg: 'bg-white', text: '#000000', primary: '#000000', primaryContainer: '#000000', fontH1: 'font-headline-xl font-light tracking-wide', cardBg: '#FBFBFB', tokenHex: '#171717' },
+    '05': { name: 'Bold Event', tag: 'INNOVATION FESTIVAL 2027', bg: '#8B1D42', heroBg: 'bg-[#8B1D42]', text: '#ffffff', primary: '#FF5A5F', primaryContainer: '#FF5A5F', fontH1: 'font-headline-xl font-black tracking-tighter', cardBg: '#A1244F', tokenHex: '#FF5A5F' },
+    '06': { name: 'Photo First', tag: 'AUDIOVISUAL ENTERPRISE KEYNOTE', bg: '#111215', heroBg: 'bg-[#111215]', text: '#ffffff', primary: '#FFB1C2', primaryContainer: '#7A1F3D', fontH1: 'font-headline-xl font-bold', cardBg: '#1E2026', tokenHex: '#FFB1C2' },
+    '07': { name: 'Grid', tag: 'MODULAR DATA & ARCHITECTURE', bg: '#F5F5F7', heroBg: 'bg-[#F5F5F7]', text: '#111111', primary: '#5C0427', primaryContainer: '#111111', fontH1: 'font-headline-xl font-bold font-mono tracking-tight', cardBg: '#FFFFFF', tokenHex: '#5C0427' },
+    '08': { name: 'Dark Stage', tag: 'VIP MAIN STAGE THEATER', bg: '#0B0C10', heroBg: 'bg-gradient-to-b from-[#0B0C10] to-[#1F2833]', text: '#ffffff', primary: '#FF2A55', primaryContainer: '#FF2A55', fontH1: 'font-headline-xl font-extrabold tracking-tight', cardBg: '#141821', tokenHex: '#FF2A55' }
+  };
+
+  var cfg = templates[id];
+  if (!cfg) return;
+
+  // Update Right Panel Active Cards
+  document.querySelectorAll('.template-card').forEach(function(card) {
+    card.classList.remove('border-2', 'border-primary', 'ring-2', 'ring-primary/20', 'bg-primary-fixed/15');
+    card.classList.add('border', 'border-outline-variant', 'bg-surface-container-lowest');
+    var badge = card.querySelector('.badge-status');
+    if (badge) {
+      badge.className = 'badge-status text-label-sm font-label-sm font-semibold text-on-surface-variant';
+      badge.innerHTML = card.id === 'template-card-01' ? 'Editorial' : card.id === 'template-card-02' ? 'Corporate / Board' : card.id === 'template-card-03' ? 'Tech & Multi-Track' : card.id === 'template-card-04' ? 'Clean & Spacious' : card.id === 'template-card-05' ? 'Festival & Energy' : card.id === 'template-card-06' ? 'Full-Bleed Media' : card.id === 'template-card-07' ? 'Swiss Modular' : 'Keynote Drama';
+    }
+  });
+
+  var activeCard = document.getElementById('template-card-' + id);
+  if (activeCard) {
+    activeCard.classList.remove('border-outline-variant', 'bg-surface-container-lowest');
+    activeCard.classList.add('border-2', 'border-primary', 'ring-2', 'ring-primary/20', 'bg-primary-fixed/15');
+    var activeBadge = activeCard.querySelector('.badge-status');
+    if (activeBadge) {
+      activeBadge.className = 'badge-status px-2 py-0.5 rounded bg-primary-container text-on-primary text-mono-badge font-mono-badge text-[10px] font-bold flex items-center gap-1';
+      activeBadge.innerHTML = '<span class="material-symbols-outlined text-[13px]">check_circle</span> ACTIVE TEMPLATE';
+    }
+  }
+
+  // Update status pill & color token
+  var statusInfo = document.getElementById('canvas-status-info');
+  if (statusInfo) statusInfo.textContent = 'Active: ' + cfg.name + ' (' + id + ')';
+  var tokenHex = document.getElementById('active-token-hex');
+  if (tokenHex) tokenHex.textContent = cfg.tokenHex;
+
+  // Morph Live Canvas elements
+  var canvas = document.getElementById('rendered-live-canvas');
+  if (canvas) {
+    canvas.style.backgroundColor = cfg.bg;
+    canvas.style.color = cfg.text;
+  }
+
+  var nav = document.getElementById('canvas-nav');
+  if (nav) {
+    nav.style.backgroundColor = id === '02' ? '#0A1424' : id === '03' ? '#0F1218' : id === '05' ? '#6E1332' : id === '08' ? '#050608' : (id === '04' ? '#ffffff' : '#ffffff');
+    nav.style.color = cfg.text;
+  }
+
+  var navTitle = document.getElementById('canvas-nav-title');
+  if (navTitle) navTitle.style.color = cfg.primary;
+
+  var navAvatar = document.getElementById('canvas-nav-avatar');
+  if (navAvatar) navAvatar.style.backgroundColor = cfg.primaryContainer;
+
+  var primaryCta = document.getElementById('canvas-primary-cta');
+  if (primaryCta) primaryCta.style.backgroundColor = cfg.primaryContainer;
+
+  var heroContent = document.getElementById('canvas-hero-content');
+  if (heroContent) {
+    heroContent.className = 'p-8 md:p-12 lg:p-14 ' + cfg.heroBg;
+  }
+
+  var heroH1 = document.getElementById('canvas-hero-h1');
+  if (heroH1) {
+    heroH1.className = cfg.fontH1 + ' mb-4 leading-tight';
+    heroH1.style.color = id === '04' ? '#000000' : (id === '02' || id === '03' || id === '05' || id === '08' ? '#ffffff' : cfg.primary);
+  }
+
+  var forumPill = document.getElementById('canvas-forum-pill');
+  if (forumPill) {
+    forumPill.textContent = cfg.tag;
+    forumPill.style.color = cfg.primary;
+    forumPill.style.borderColor = cfg.primary;
+  }
+
+  var heroBtnPrimary = document.getElementById('canvas-hero-btn-primary');
+  if (heroBtnPrimary) heroBtnPrimary.style.backgroundColor = cfg.primaryContainer;
+
+  var heroDesc = document.getElementById('canvas-hero-desc');
+  if (heroDesc) {
+    heroDesc.style.color = id === '02' || id === '03' || id === '05' || id === '08' ? 'rgba(255,255,255,0.8)' : '#554245';
+  }
+
+  var overlayPill = document.getElementById('canvas-overlay-pill');
+  if (overlayPill) overlayPill.style.backgroundColor = cfg.primaryContainer;
+
+  var inspectBadge = document.getElementById('canvas-inspect-badge');
+  if (inspectBadge) inspectBadge.textContent = 'EDITING: HERO (' + cfg.name.toUpperCase() + ')';
+};
+</script></body></html>
