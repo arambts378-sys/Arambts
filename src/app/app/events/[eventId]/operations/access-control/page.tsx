@@ -187,6 +187,20 @@ export default function AccessControlPage() {
         </div>
       </div>
 
+      <div className="bg-surface-container-low border border-outline-variant p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
+        <div>
+          <h2 className="text-title-lg font-bold uppercase tracking-tight">Volunteer Access</h2>
+          <p className="text-body-md text-on-surface-variant mt-1">Manage event volunteers and assign the scanner zones they are allowed to access.</p>
+        </div>
+        <Link 
+          href={`/app/events/${eventId}/operations/volunteers`}
+          className="bg-primary text-on-primary px-6 py-2.5 rounded-full font-bold shadow-sm hover:bg-primary/90 transition-all whitespace-nowrap flex items-center gap-2"
+        >
+          <span className="material-symbols-outlined text-[20px]">group</span>
+          Manage Volunteers
+        </Link>
+      </div>
+
       <div className="border-b border-outline-variant flex gap-8">
         <button 
           onClick={() => setActiveTab('zones')}

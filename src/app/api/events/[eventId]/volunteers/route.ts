@@ -113,7 +113,8 @@ export async function POST(
 
     if (userError || !targetUserId) {
       return NextResponse.json({ 
-        error: 'User is not a member of this workspace or not found. Please invite them to the workspace first.' 
+        code: 'NOT_WORKSPACE_MEMBER',
+        message: 'This person is not a member of this workspace yet.' 
       }, { status: 400 });
     }
 
