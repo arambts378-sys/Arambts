@@ -72,7 +72,7 @@ export default function AccessControlPage() {
           starts_at,
           ends_at,
           access_zones ( id, name ),
-          profiles ( id, full_name, email )
+          profiles ( id, full_name )
         `)
         .eq('event_id', eventId);
 
@@ -83,7 +83,7 @@ export default function AccessControlPage() {
         .from('workspace_members')
         .select(`
           user_id,
-          profiles ( id, full_name, email )
+          profiles ( id, full_name )
         `)
         .eq('workspace_id', activeWorkspace.id);
 
