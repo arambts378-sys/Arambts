@@ -21,7 +21,7 @@ export default function VolunteersPage({ params }: { params: Promise<{ eventId: 
       setLoading(true);
       const [volRes, zoneRes] = await Promise.all([
         fetch(`/api/events/${eventId}/volunteers`),
-        fetch(`/api/events/${eventId}/check-in/zones`) // Assuming this endpoint exists or similar
+        fetch(`/api/events/${eventId}/zones`)
       ]);
       
       if (!volRes.ok) throw new Error('Failed to fetch volunteers');

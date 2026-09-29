@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+import { createAdminClient } from '@/lib/supabase/admin';
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ eventId: string }> }
@@ -31,7 +33,6 @@ export async function GET(
         user_id,
         role,
         status,
-        users:user_id (email, raw_user_meta_data),
         zones:volunteer_zone_assignments (
           zone_id,
           access_zones (name)
@@ -42,7 +43,28 @@ export async function GET(
 
     if (error) throw error;
 
-    return NextResponse.json(assignments);
+    const adminClient = createAdminClient();
+    
+    // Resolve user emails securely server-side
+    const assignmentsWithUsers = await Promise.all(
+      assignments.map(async (assignment) => {
+        try {
+          const { data: { user: volunteerUser } } = await adminClient.auth.admin.getUserById(assignment.user_id);
+          return {
+            ...assignment,
+            users: volunteerUser ? { email: volunteerUser.email, raw_user_meta_data: volunteerUser.user_metadata } : null
+          };
+        } catch (err) {
+          console.error(`Failed to fetch user ${assignment.user_id}`, err);
+          return {
+            ...assignment,
+            users: null
+          };
+        }
+      })
+    );
+
+    return NextResponse.json(assignmentsWithUsers);
   } catch (error: any) {
     console.error('Error fetching volunteers:', error);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
