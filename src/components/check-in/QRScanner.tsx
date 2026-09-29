@@ -8,7 +8,6 @@ interface QRScannerProps {
   accessZoneId: string;
   onScanResult: (result: ScanLog) => void;
   disabled?: boolean;
-  accessToken?: string;
 }
 
 export type ScanResultState = 'idle' | 'starting' | 'ready' | 'validating' | 'allowed' | 'denied' | 'camera_error' | 'network_error';
@@ -21,7 +20,7 @@ export interface ScanLog {
   message: string;
 }
 
-export default function QRScanner({ eventId, accessZoneId, onScanResult, disabled, accessToken }: QRScannerProps) {
+export default function QRScanner({ eventId, accessZoneId, onScanResult, disabled }: QRScannerProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const containerId = "qr-reader";
 
@@ -136,7 +135,7 @@ export default function QRScanner({ eventId, accessZoneId, onScanResult, disable
       const res = await fetch(`/api/events/${eventId}/check-in`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential: decodedText, accessZoneId, accessToken })
+        body: JSON.stringify({ credential: decodedText, accessZoneId })
       });
 
       const data = await res.json();

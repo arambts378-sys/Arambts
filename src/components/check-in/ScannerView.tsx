@@ -13,7 +13,6 @@ interface ScannerViewProps {
   assignmentEndsAt: string | null;
   zoneStartsAt: string | null;
   zoneEndsAt: string | null;
-  accessToken?: string;
 }
 
 export default function ScannerView({
@@ -24,8 +23,7 @@ export default function ScannerView({
   assignmentStartsAt,
   assignmentEndsAt,
   zoneStartsAt,
-  zoneEndsAt,
-  accessToken
+  zoneEndsAt
 }: ScannerViewProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -114,7 +112,7 @@ export default function ScannerView({
       {/* Header */}
       <header className="bg-primary text-white p-4 safe-top sticky top-0 z-10 shadow-sm">
         <div className="flex items-center justify-between max-w-md mx-auto">
-          <Link href={accessToken ? `/check-in?access=${accessToken}` : `/check-in?event=${eventId}`} className="p-2 -ml-2 text-white/80 hover:text-white transition-colors rounded-full hover:bg-white/10">
+          <Link href={`/check-in?event=${eventId}`} className="p-2 -ml-2 text-white/80 hover:text-white transition-colors rounded-full hover:bg-white/10">
             <span className="material-symbols-outlined block">arrow_back</span>
           </Link>
           <div className="text-center flex-1">
@@ -136,7 +134,6 @@ export default function ScannerView({
             accessZoneId={zoneId}
             onScanResult={handleScanResult}
             disabled={state !== 'OPEN'}
-            accessToken={accessToken}
           />
         </div>
 

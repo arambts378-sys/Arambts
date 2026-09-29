@@ -37,25 +37,19 @@ export default function CheckInOperationsPage() {
         return;
       }
 
-      // Load assigned active access zones for this event
-      const { data: assignmentsData, error: zonesError } = await supabase
-        .from('event_staff_assignments')
-        .select('access_zones(*)')
+      // Load all active access zones for this event
+      const { data: zonesData, error: zonesError } = await supabase
+        .from('access_zones')
+        .select('*')
         .eq('event_id', eventId)
-        .eq('user_id', userId)
-        .eq('active', true);
+        .eq('is_active', true)
+        .order('name');
 
       if (zonesError) {
-        setAuthError('Could not load assigned checkpoints.');
+        setAuthError('Could not load checkpoints or you do not have permission.');
         setLoading(false);
         return;
       }
-
-      // Filter out inactive zones if any
-      const zonesData = assignmentsData
-        ?.map((a: any) => a.access_zones)
-        .filter((z: any) => z && z.is_active)
-        .sort((a: any, b: any) => a.name.localeCompare(b.name));
 
       setZones(zonesData || []);
 

@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
 import { createClient } from '@/lib/supabase/client';
-import { getVolunteerEmails } from './actions';
 
 export default function AccessControlPage() {
   const routeParams = useParams();
@@ -13,19 +12,13 @@ export default function AccessControlPage() {
   const { getEvent, isHydrated, activeWorkspace } = useAppContext();
 
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'zones' | 'volunteers' | 'activity'>('zones');
+  const [activeTab, setActiveTab] = useState<'zones' | 'activity'>('zones');
   
   const [zones, setZones] = useState<any[]>([]);
-  const [assignments, setAssignments] = useState<any[]>([]);
-  const [invitations, setInvitations] = useState<any[]>([]);
-  const [emailJobs, setEmailJobs] = useState<any[]>([]);
-  const [workspaceMembers, setWorkspaceMembers] = useState<any[]>([]);
   const [recentScans, setRecentScans] = useState<any[]>([]);
-  const [volunteerEmails, setVolunteerEmails] = useState<Record<string, string>>({});
 
   // Modals
   const [isAddZoneModalOpen, setIsAddZoneModalOpen] = useState(false);
-  const [isAddVolunteerModalOpen, setIsAddVolunteerModalOpen] = useState(false);
 
   // New Zone State
   const [newZone, setNewZone] = useState({
@@ -44,12 +37,6 @@ export default function AccessControlPage() {
     sequence: ''
   });
 
-  // New Volunteer State
-  const [volunteerEmail, setVolunteerEmail] = useState('');
-  const [selectedZoneIds, setSelectedZoneIds] = useState<string[]>([]);
-  const [startSchedule, setStartSchedule] = useState('');
-  const [endSchedule, setEndSchedule] = useState('');
-
   useEffect(() => {
     if (!isHydrated || !eventId || !activeWorkspace) return;
 
@@ -64,65 +51,6 @@ export default function AccessControlPage() {
         .order('created_at');
       
       if (zonesData) setZones(zonesData);
-
-      // Load assignments
-      const { data: assignmentsData } = await supabase
-        .from('event_staff_assignments')
-        .select(`
-          id,
-          active,
-          starts_at,
-          ends_at,
-          access_zones ( id, name ),
-          profiles!event_staff_assignments_user_id_fkey ( id, full_name )
-        `)
-        .eq('event_id', eventId);
-
-      if (assignmentsData) {
-        setAssignments(assignmentsData);
-        // Fetch emails securely via server action
-        const userIds = assignmentsData.map((a: any) => a.profiles?.id).filter(Boolean);
-        if (userIds.length > 0) {
-          const emails = await getVolunteerEmails(userIds);
-          setVolunteerEmails(emails);
-        }
-      }
-
-      // Load members for dropdown (optional, could just use email input as requested, but good for existing members)
-      const { data: membersData } = await supabase
-        .from('workspace_members')
-        .select(`
-          user_id,
-          profiles ( id, full_name )
-        `)
-        .eq('workspace_id', activeWorkspace.id);
-
-      if (membersData) {
-        setWorkspaceMembers(membersData.map((m: any) => m.profiles).filter(Boolean));
-      }
-
-      // Load pending invitations
-      const { data: invitationsData } = await supabase
-        .from('workspace_invitations')
-        .select('*')
-        .eq('workspace_id', activeWorkspace.id);
-        
-      if (invitationsData) {
-        // filter out those that don't match this event (metadata->>event_id)
-        const eventInvitations = invitationsData.filter((inv: any) => inv.metadata?.event_id === eventId);
-        setInvitations(eventInvitations);
-      }
-
-      // Load email jobs for volunteers
-      const { data: jobsData } = await supabase
-        .from('integration_jobs')
-        .select('id, event_type, status, payload, idempotency_key')
-        .eq('event_id', eventId)
-        .in('event_type', ['volunteer_access_assigned', 'volunteer_invitation']);
-        
-      if (jobsData) {
-        setEmailJobs(jobsData);
-      }
 
       // Load recent activity
       const { data: scansData } = await supabase
@@ -211,88 +139,6 @@ export default function AccessControlPage() {
     });
   };
 
-  const handleInviteVolunteer = async () => {
-    if (!volunteerEmail || selectedZoneIds.length === 0) return;
-    
-    try {
-      const res = await fetch(`/api/events/${eventId}/volunteers/invite`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: volunteerEmail,
-          zoneIds: selectedZoneIds,
-          startsAt: startSchedule || null,
-          endsAt: endSchedule || null
-        })
-      });
-      
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to invite');
-      
-      alert("Volunteer access sent successfully!");
-      setIsAddVolunteerModalOpen(false);
-      setVolunteerEmail('');
-      setSelectedZoneIds([]);
-      setStartSchedule('');
-      setEndSchedule('');
-      window.location.reload();
-    } catch (e: any) {
-      alert("Error: " + e.message);
-    }
-  };
-
-  const handleDeleteAssignment = async (assignmentId: string) => {
-    if (!window.confirm('Are you sure you want to remove this volunteer access?')) return;
-    
-    const supabase = createClient();
-    const { error } = await supabase
-      .from('event_staff_assignments')
-      .delete()
-      .eq('id', assignmentId);
-    
-    if (!error) {
-      setAssignments(assignments.filter(a => a.id !== assignmentId));
-    } else {
-      alert("Error deleting assignment: " + error.message);
-    }
-  };
-
-  const handleResendEmail = async (type: 'assignment' | 'invitation', id: string, email: string) => {
-    try {
-      const res = await fetch(`/api/events/${eventId}/volunteers/resend`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type,
-          id,
-          email
-        })
-      });
-      
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to resend');
-      
-      alert("Email queued for resend successfully!");
-      window.location.reload();
-    } catch (e: any) {
-      alert("Error: " + e.message);
-    }
-  };
-
-  const handleCancelInvitation = async (invitationId: string) => {
-    const supabase = createClient();
-    const { error } = await supabase
-      .from('workspace_invitations')
-      .delete()
-      .eq('id', invitationId);
-    
-    if (!error) {
-      setInvitations(invitations.filter(i => i.id !== invitationId));
-    } else {
-      alert("Error cancelling invitation: " + error.message);
-    }
-  };
-
   const handleDeactivateZone = async (zoneId: string, currentStatus: boolean) => {
     const supabase = createClient();
     const { error } = await supabase
@@ -310,7 +156,6 @@ export default function AccessControlPage() {
   if (!event) return <div className="p-10 text-center">Event not found</div>;
 
   const activeZones = zones.filter(z => z.is_active).length;
-  const assignedVolunteers = new Set(assignments.filter(a => a.active).map(a => a.profiles?.id)).size;
 
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8 pb-20">
@@ -335,10 +180,6 @@ export default function AccessControlPage() {
           <p className="text-display-sm font-bold text-on-surface mt-2">{zones.length}</p>
         </div>
         <div className="bg-white border border-outline-variant p-6 rounded-2xl shadow-sm">
-          <p className="text-label-md uppercase font-bold text-on-surface-variant">Assigned Volunteers</p>
-          <p className="text-display-sm font-bold text-on-surface mt-2">{assignedVolunteers}</p>
-        </div>
-        <div className="bg-white border border-outline-variant p-6 rounded-2xl shadow-sm">
           <p className="text-label-md uppercase font-bold text-on-surface-variant">Today's Scans</p>
           <p className="text-display-sm font-bold text-on-surface mt-2">
             {recentScans.filter(s => new Date(s.scanned_at).toDateString() === new Date().toDateString()).length}
@@ -352,12 +193,6 @@ export default function AccessControlPage() {
           className={`pb-3 text-label-lg font-bold uppercase tracking-wider ${activeTab === 'zones' ? 'text-primary border-b-2 border-primary' : 'text-on-surface-variant hover:text-on-surface'}`}
         >
           Access Zones
-        </button>
-        <button 
-          onClick={() => setActiveTab('volunteers')}
-          className={`pb-3 text-label-lg font-bold uppercase tracking-wider ${activeTab === 'volunteers' ? 'text-primary border-b-2 border-primary' : 'text-on-surface-variant hover:text-on-surface'}`}
-        >
-          Volunteer Access
         </button>
         <button 
           onClick={() => setActiveTab('activity')}
@@ -431,124 +266,6 @@ export default function AccessControlPage() {
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'volunteers' && (
-        <div className="space-y-6">
-          <div className="flex justify-end">
-            <button 
-              onClick={() => setIsAddVolunteerModalOpen(true)}
-              className="bg-primary text-on-primary px-6 py-2.5 rounded-full font-bold shadow-sm hover:bg-primary/90 transition-all flex items-center gap-2"
-            >
-              <span className="material-symbols-outlined text-[20px]">person_add</span>
-              Add Volunteer
-            </button>
-          </div>
-
-          <div className="bg-white border border-outline-variant rounded-2xl overflow-hidden shadow-sm">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-surface-container-low border-b border-outline-variant/60">
-                  <th className="px-6 py-4 text-label-md uppercase text-on-surface-variant">Volunteer</th>
-                  <th className="px-6 py-4 text-label-md uppercase text-on-surface-variant">Email</th>
-                  <th className="px-6 py-4 text-label-md uppercase text-on-surface-variant">Assigned Zones</th>
-                  <th className="px-6 py-4 text-label-md uppercase text-on-surface-variant">Schedule</th>
-                  <th className="px-6 py-4 text-label-md uppercase text-on-surface-variant">Status</th>
-                  <th className="px-6 py-4 text-label-md uppercase text-on-surface-variant">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant/40">
-                {assignments.length === 0 && invitations.length === 0 ? (
-                  <tr><td colSpan={6} className="px-6 py-8 text-center text-on-surface-variant">No volunteers assigned.</td></tr>
-                ) : (
-                  <>
-                    {assignments.map(a => {
-                      const latestJob = emailJobs
-                        .filter(j => j.event_type === 'volunteer_access_assigned' && j.payload?.assignment_id === a.id)
-                        .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())[0];
-                      const statusMap: Record<string, string> = { pending: 'Pending', processing: 'Sending', success: 'Sent', failed: 'Failed' };
-                      const emailStatus = latestJob ? statusMap[latestJob.status] || latestJob.status : 'Not Sent';
-                      
-                      return (
-                        <tr key={`assign-${a.id}`} className="hover:bg-surface-container/30">
-                          <td className="px-6 py-4 font-bold">{a.profiles?.full_name || 'Existing User'}</td>
-                          <td className="px-6 py-4 text-on-surface-variant">{a.profiles?.id ? (volunteerEmails[a.profiles.id] || 'N/A') : 'N/A'}</td>
-                          <td className="px-6 py-4 font-medium">{a.access_zones?.name}</td>
-                          <td className="px-6 py-4 text-sm text-on-surface-variant">
-                            {a.starts_at ? new Date(a.starts_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Anytime'} - 
-                            {a.ends_at ? new Date(a.ends_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Anytime'}
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex flex-col gap-1">
-                              <span className={`px-2 py-0.5 text-xs font-bold rounded uppercase w-fit ${a.active ? 'bg-green-100 text-green-800' : 'bg-surface-variant text-on-surface-variant'}`}>
-                                {a.active ? 'Active' : 'Inactive'}
-                              </span>
-                              <span className={`text-xs font-bold ${emailStatus === 'Sent' ? 'text-green-600' : emailStatus === 'Failed' ? 'text-error' : 'text-on-surface-variant'}`}>
-                                Email: {emailStatus}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 flex items-center gap-3">
-                            <button className="text-primary hover:underline text-sm font-bold">Edit</button>
-                            <button onClick={() => handleResendEmail('assignment', a.id, a.profiles?.id ? volunteerEmails[a.profiles.id] : '')} className="text-primary hover:underline text-sm font-bold">Resend Email</button>
-                            <button onClick={() => handleDeleteAssignment(a.id)} className="text-error hover:underline text-sm font-bold">
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {invitations.map(inv => {
-                      const latestJob = emailJobs
-                        .filter(j => j.event_type === 'volunteer_invitation' && j.payload?.invitation_id === inv.id)
-                        .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())[0];
-                      const statusMap: Record<string, string> = { pending: 'Pending', processing: 'Sending', success: 'Sent', failed: 'Failed' };
-                      const emailStatus = latestJob ? statusMap[latestJob.status] || latestJob.status : 'Not Sent';
-                      
-                      const isExpired = new Date(inv.expires_at) < new Date();
-                      
-                      const zoneNames = inv.metadata?.assigned_zones?.map((zId: string) => zones.find(z => z.id === zId)?.name || 'Unknown').join(', ') || 'General Access';
-                      const sAt = inv.metadata?.starts_at;
-                      const eAt = inv.metadata?.ends_at;
-
-                      return (
-                        <tr key={`inv-${inv.id}`} className="hover:bg-surface-container/30 bg-surface-container-lowest/50">
-                          <td className="px-6 py-4 font-bold text-on-surface-variant flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[16px]">mail</span> Pending User
-                          </td>
-                          <td className="px-6 py-4 text-on-surface-variant">{inv.email}</td>
-                          <td className="px-6 py-4 font-medium">{zoneNames}</td>
-                          <td className="px-6 py-4 text-sm text-on-surface-variant">
-                            {sAt ? new Date(sAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Anytime'} - 
-                            {eAt ? new Date(eAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Anytime'}
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex flex-col gap-1">
-                              <span className={`px-2 py-0.5 text-xs font-bold rounded uppercase w-fit ${isExpired ? 'bg-error-container text-on-error-container' : 'bg-blue-100 text-blue-800'}`}>
-                                {isExpired ? 'Expired' : 'Invited'}
-                              </span>
-                              <span className={`text-xs font-bold ${emailStatus === 'Sent' ? 'text-green-600' : emailStatus === 'Failed' ? 'text-error' : 'text-on-surface-variant'}`}>
-                                Email: {emailStatus}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 flex items-center gap-3">
-                            <button onClick={() => handleResendEmail('invitation', inv.id, inv.email)} className="text-primary hover:underline text-sm font-bold">
-                              {isExpired ? 'Regenerate Invitation' : 'Resend Invitation'}
-                            </button>
-                            <button onClick={() => handleCancelInvitation(inv.id)} className="text-error hover:underline text-sm font-bold">
-                              Cancel
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </>
-                )}
-              </tbody>
-            </table>
           </div>
         </div>
       )}
@@ -673,63 +390,6 @@ export default function AccessControlPage() {
             <div className="mt-8 flex justify-end gap-3">
               <button onClick={() => setIsAddZoneModalOpen(false)} className="px-6 py-2 font-bold text-on-surface hover:bg-surface-container rounded-full">Cancel</button>
               <button onClick={handleCreateZone} disabled={!newZone.name} className="px-6 py-2 font-bold bg-primary text-on-primary rounded-full disabled:opacity-50">Create Zone</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isAddVolunteerModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-3xl p-8 shadow-xl">
-            <h2 className="text-headline-sm font-bold mb-6">Assign Volunteer Access</h2>
-            
-            <div className="space-y-6">
-              <div>
-                <label className="block text-label-md font-bold mb-2">Volunteer Email</label>
-                <input 
-                  type="email" 
-                  className="w-full p-3 border border-outline rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none" 
-                  placeholder="volunteer@example.com" 
-                  value={volunteerEmail} 
-                  onChange={e => setVolunteerEmail(e.target.value)} 
-                />
-              </div>
-
-              <div>
-                <label className="block text-label-md font-bold mb-3">Access Zones</label>
-                <div className="space-y-2 max-h-48 overflow-y-auto border border-outline rounded-xl p-3 bg-surface-container-lowest">
-                  {zones.length === 0 ? <p className="text-sm text-on-surface-variant">No active checkpoints found.</p> : zones.filter(z => z.is_active).map(z => (
-                    <label key={z.id} className="flex items-center gap-3 p-2 hover:bg-surface-container cursor-pointer rounded-lg">
-                      <input 
-                        type="checkbox" 
-                        className="w-5 h-5 rounded border-outline text-primary focus:ring-primary"
-                        checked={selectedZoneIds.includes(z.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) setSelectedZoneIds([...selectedZoneIds, z.id]);
-                          else setSelectedZoneIds(selectedZoneIds.filter(id => id !== z.id));
-                        }}
-                      />
-                      <span className="font-bold">{z.name}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-label-md font-bold mb-2">Start Time</label>
-                  <input type="time" className="w-full p-3 border border-outline rounded-xl" value={startSchedule} onChange={e => setStartSchedule(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-label-md font-bold mb-2">End Time</label>
-                  <input type="time" className="w-full p-3 border border-outline rounded-xl" value={endSchedule} onChange={e => setEndSchedule(e.target.value)} />
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-8 flex justify-end gap-3">
-              <button onClick={() => setIsAddVolunteerModalOpen(false)} className="px-6 py-2 font-bold text-on-surface hover:bg-surface-container rounded-full">Cancel</button>
-              <button onClick={handleInviteVolunteer} disabled={!volunteerEmail || selectedZoneIds.length === 0} className="px-6 py-2 font-bold bg-primary text-on-primary rounded-full disabled:opacity-50">Send Access</button>
             </div>
           </div>
         </div>

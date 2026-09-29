@@ -412,14 +412,10 @@ export default function IntegrationsPage() {
                     jobs.map((job) => (
                       <tr key={job.id} className="hover:bg-surface-container-lowest/30 transition-colors">
                         <td className="px-6 py-4 text-body-md font-medium">
-                          {job.event_type === 'volunteer_invitation' || job.event_type === 'volunteer_access_assigned' 
-                            ? job.event_type.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-                            : (job.payload?.registrationNumber || '-')}
+                          {job.payload?.registrationNumber || '-'}
                         </td>
                         <td className="px-6 py-4 text-body-md text-on-surface-variant">
-                          {job.event_type === 'volunteer_invitation' || job.event_type === 'volunteer_access_assigned'
-                            ? job.payload?.recipient_email
-                            : `${job.payload?.attendee?.firstName || ''} ${job.payload?.attendee?.lastName || ''}`.trim() || '-'}
+                          {`${job.payload?.attendee?.firstName || ''} ${job.payload?.attendee?.lastName || ''}`.trim() || '-'}
                         </td>
                         <td className="px-6 py-4 text-body-md capitalize">{job.provider.replace('_', ' ')}</td>
                         <td className="px-6 py-4">

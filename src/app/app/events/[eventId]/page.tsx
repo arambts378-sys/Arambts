@@ -134,7 +134,7 @@ export default function EventWorkspacePage() {
             </div>
             <div>
               <h4 className="text-label-md font-bold text-on-surface group-hover:text-primary transition-colors">QR & Access</h4>
-              <p className="text-body-sm text-on-surface-variant mt-1">Configure QR access, checkpoints, entitlements, and volunteer permissions.</p>
+              <p className="text-body-sm text-on-surface-variant mt-1">Configure QR access, checkpoints, and entitlements.</p>
             </div>
           </Link>
 

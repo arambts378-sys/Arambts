@@ -223,7 +223,7 @@ export const accessControlService = {
    * Handles the secure check-in flow by calling the atomic process_check_in PostgreSQL RPC.
    * This guarantees race-condition safety and authoritative server-side execution.
    */
-  async evaluateCheckInAccess(rawToken: string, zoneId: string, scannerAccessToken?: string) {
+  async evaluateCheckInAccess(rawToken: string, zoneId: string) {
     const supabase = await createClient();
     
     // Hash the token using the same logic as qrCredentialsService
@@ -233,10 +233,6 @@ export const accessControlService = {
       p_qr_token_hash: tokenHash,
       p_zone_id: zoneId
     };
-
-    if (scannerAccessToken) {
-      params.p_scanner_token_hash = crypto.createHash('sha256').update(scannerAccessToken).digest('hex');
-    }
 
     const { data, error } = await supabase.rpc('process_check_in', params);
 

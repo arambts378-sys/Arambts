@@ -64,10 +64,6 @@ export const processIntegrationJobs = async () => {
         
         if (job.event_type === 'qr_delivery') {
           await emailProvider.sendQrDelivery(job, event, integration.config);
-        } else if (job.event_type === 'volunteer_invitation') {
-          await emailProvider.sendVolunteerInvitation(job, event, integration.config);
-        } else if (job.event_type === 'volunteer_access_assigned') {
-          await emailProvider.sendVolunteerAccessAssigned(job, event, integration.config);
         } else {
           await emailProvider.process(job, event, integration.config);
         }
