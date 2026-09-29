@@ -60,8 +60,16 @@ export const integrationsService = {
   triggerJobProcessor: async (): Promise<void> => {
     try {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const isServer = typeof window === 'undefined';
+      const headers: Record<string, string> = {};
+
+      if (isServer && process.env.CRON_SECRET) {
+        headers['Authorization'] = `Bearer ${process.env.CRON_SECRET}`;
+      }
+
       await fetch(`${appUrl}/api/integrations/process`, {
-        method: 'POST'
+        method: 'POST',
+        headers
       });
     } catch (err) {
       console.error('Failed to trigger job processor:', err);

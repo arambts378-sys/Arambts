@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useRef, useState } from 'react';
-import QRCode from 'react-qr-code';
+import React, { useRef, useState, useEffect } from 'react';
+import QRCodeLib from 'qrcode';
 import html2canvas from 'html2canvas';
 
 export interface TicketData {
@@ -22,6 +22,7 @@ interface TicketTemplateProps {
 export function TicketTemplate({ data, className = '' }: TicketTemplateProps) {
   const ticketRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
   const {
     event,
@@ -30,6 +31,14 @@ export function TicketTemplate({ data, className = '' }: TicketTemplateProps) {
     rawToken,
     distanceCategory
   } = data;
+
+  useEffect(() => {
+    if (rawToken) {
+      QRCodeLib.toDataURL(rawToken, { width: 140, margin: 1, errorCorrectionLevel: 'H' })
+        .then(url => setQrDataUrl(url))
+        .catch(err => console.error('Failed to generate QR:', err));
+    }
+  }, [rawToken]);
 
   const isWalkathon = event?.type === 'Walkathon';
   
@@ -121,11 +130,13 @@ export function TicketTemplate({ data, className = '' }: TicketTemplateProps) {
           <div className="flex flex-col items-center justify-center gap-3 pt-2">
             <div className="p-3 bg-white border border-outline-variant rounded-xl shadow-sm">
               {rawToken ? (
-                <QRCode 
-                  value={rawToken} 
-                  size={140}
-                  level="H"
-                />
+                qrDataUrl ? (
+                  <img src={qrDataUrl} width={140} height={140} alt="QR Code" />
+                ) : (
+                  <div className="w-[140px] h-[140px] flex items-center justify-center">
+                    <span className="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
+                  </div>
+                )
               ) : (
                 <div className="w-[140px] h-[140px] bg-surface-container flex items-center justify-center rounded-lg text-outline">
                   <span className="material-symbols-outlined text-4xl">qr_code_2</span>
@@ -152,7 +163,7 @@ export function TicketTemplate({ data, className = '' }: TicketTemplateProps) {
       {/* Download Button (Not part of the captured canvas) */}
       <button 
         onClick={handleDownload}
-        disabled={isDownloading || !rawToken}
+        disabled={isDownloading || !rawToken || !qrDataUrl}
         className="mt-6 w-full max-w-[400px] py-3.5 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-70"
       >
         {isDownloading ? (

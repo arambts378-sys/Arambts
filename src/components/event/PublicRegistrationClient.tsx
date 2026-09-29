@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { registrationsService } from '@/services/registrations';
 import { EventRegistrationSettings } from '@/types';
 import Link from 'next/link';
-import QRCode from 'react-qr-code';
 import { TicketTemplate } from '../ticket/TicketTemplate';
 
 interface Props {
