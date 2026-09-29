@@ -6,6 +6,62 @@ import { scannerSessionsService } from '@/services/scannerSessions';
 import crypto from 'crypto';
 import { encryptSecret } from '@/utils/encryption';
 
+async function resolveOrCreateVolunteerAuthUser(adminClient: any, email: string) {
+  const cleanEmail = email.trim().toLowerCase();
+
+  // Try to create the user directly
+  const { data: newAuthUser, error: createUserError } = await adminClient.auth.admin.createUser({
+    email: cleanEmail,
+    email_confirm: true,
+    user_metadata: { source: 'volunteer_scanner_invite' }
+  });
+
+  if (createUserError) {
+    // Treat Supabase's user-already-exists condition as the duplicate case.
+    const isDuplicate = createUserError.status === 422 ||
+                        createUserError.code === 'user_already_exists' ||
+                        createUserError.message.toLowerCase().includes('already');
+
+    if (isDuplicate) {
+      let existingUser = null;
+      let page = 1;
+      const perPage = 1000;
+
+      // Robustly paginate through users until found or exhausted
+      while (true) {
+        const { data: usersData, error: listError } = await adminClient.auth.admin.listUsers({ page, perPage });
+        
+        if (listError) {
+          throw new Error(`Failed to list users during duplicate resolution: ${listError.message}`);
+        }
+
+        // If the page is empty, we've reached the end
+        if (!usersData || !usersData.users || usersData.users.length === 0) {
+          break;
+        }
+
+        const found = usersData.users.find((u: any) => u.email?.toLowerCase() === cleanEmail);
+        if (found) {
+          existingUser = found;
+          break;
+        }
+
+        page++;
+      }
+
+      if (!existingUser) {
+        throw new Error('User was reported as already registered, but could not be found via lookup.');
+      }
+
+      return { user: existingUser, created: false };
+    }
+
+    throw new Error('Failed to create volunteer account: ' + createUserError.message);
+  }
+
+  return { user: newAuthUser.user, created: true };
+}
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ eventId: string }> }
@@ -50,48 +106,24 @@ export async function POST(
       return NextResponse.json({ error: 'You do not have permission to manage volunteers.' }, { status: 403 });
     }
 
-    // 3. Resolve email server-side using admin client since profiles doesn't store email
+    // 4. Resolve Auth User
     const adminClient = createAdminClient();
-    let targetUserId = null;
+    const { user: targetUser, created: isNewUser } = await resolveOrCreateVolunteerAuthUser(adminClient, email);
+    const targetUserId = targetUser.id;
+
+    // 5. Handle Profile
     let recipientName = null;
-
-    const cleanEmail = email.trim().toLowerCase();
+    const { data: existingProfile } = await supabase.from('profiles').select('full_name').eq('id', targetUserId).single();
     
-    // Attempt to create the user first
-    const { data: newAuthUser, error: createUserError } = await adminClient.auth.admin.createUser({
-      email: cleanEmail,
-      email_confirm: true,
-      user_metadata: { source: 'volunteer_scanner_invite' }
-    });
-
-    if (createUserError) {
-      // If user exists, securely fetch their ID using generateLink (which works for existing users)
-      if (createUserError.message.includes('already been registered')) {
-        const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
-          type: 'magiclink',
-          email: cleanEmail
-        });
-        
-        if (linkError || !linkData?.user) {
-          throw new Error('Failed to resolve existing user: ' + (linkError?.message || 'Unknown error'));
-        }
-        
-        targetUserId = linkData.user.id;
-        
-        const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', targetUserId).single();
-        recipientName = profile?.full_name || null;
-      } else {
-        throw new Error('Failed to create volunteer account: ' + createUserError.message);
-      }
+    if (existingProfile) {
+      recipientName = existingProfile.full_name;
     } else {
-      // New user created successfully
-      targetUserId = newAuthUser.user.id;
-      
-      // Upsert profile
+      // Create minimal profile if it doesn't exist
       await adminClient.from('profiles').upsert({
         id: targetUserId,
         full_name: 'Volunteer'
       }, { onConflict: 'id' });
+      recipientName = 'Volunteer';
     }
 
     // Determine the role to assign (use 'member' by default)
@@ -101,7 +133,7 @@ export async function POST(
     }
 
     const eventName = eventData?.name || 'Event';
-
+    
     // Fetch Zone Names for payload
     const { data: zonesData } = await supabase.from('access_zones').select('id, name').in('id', zoneIds);
     const assignedZones = zonesData ? zonesData.map((z: any) => ({ name: z.name })) : [];
@@ -109,7 +141,7 @@ export async function POST(
     const startDateTime = startsAt ? new Date(new Date().toDateString() + ' ' + startsAt).toISOString() : null;
     const endDateTime = endsAt ? new Date(new Date().toDateString() + ' ' + endsAt).toISOString() : null;
 
-    // Ensure workspace membership
+    // Ensure workspace membership if needed by the architecture
     const { data: existingMember } = await supabase
       .from('workspace_members')
       .select('id')
@@ -125,8 +157,30 @@ export async function POST(
       });
     }
 
-    // Create assignments
-    const assignmentsToInsert = zoneIds.map((zId: string) => ({
+    // 6. Handle Idempotent Assignments
+    // Load existing active assignments
+    const { data: existingAssignments } = await supabase
+      .from('event_staff_assignments')
+      .select('access_zone_id')
+      .eq('event_id', eventId)
+      .eq('user_id', targetUserId)
+      .eq('active', true);
+
+    const existingZoneIds = new Set(existingAssignments?.map(a => a.access_zone_id) || []);
+    const newZoneIds = zoneIds.filter((zId: string) => !existingZoneIds.has(zId));
+
+    // If completely idempotent request (no new zones)
+    if (newZoneIds.length === 0) {
+      return NextResponse.json({ 
+        success: true, 
+        existingUser: !isNewUser, 
+        assignmentCreated: false,
+        message: 'Volunteer is already assigned to all requested zones' 
+      });
+    }
+
+    // Create ONLY missing assignments
+    const assignmentsToInsert = newZoneIds.map((zId: string) => ({
       event_id: eventId,
       user_id: targetUserId,
       access_zone_id: zId,
@@ -147,23 +201,22 @@ export async function POST(
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + 7);
 
-    // Create or reuse scanner session
+    // 7. Scanner session
     const { rawToken } = await scannerSessionsService.createOrRotateScannerSession(eventId, targetUserId, expiryDate);
 
-    // Generate integration job for existing user assignment
-    // Use the first assignment ID as part of the idempotency key for this batch
+    // 8. Queue Email Job (only for new assignments)
     const assignmentId = assignedData && assignedData.length > 0 ? assignedData[0].id : targetUserId;
-    const idempotencyKey = `${eventId}:${assignmentId}:volunteer_access_assigned`;
+    // Create a highly specific idempotency key to prevent duplicate emails for the same batch of assignments
+    const idempotencyKey = `${eventId}:${assignmentId}:${Date.now()}:volunteer_access_assigned`;
 
-    
     const payload = {
       event_id: eventId,
       assignment_id: assignmentId,
-      recipient_email: cleanEmail,
+      recipient_email: targetUser.email,
       recipient_name: recipientName,
       event_name: eventName,
       event_date: eventData ? `${eventData.start_date}T${eventData.start_time}` : null,
-      assigned_zones: assignedZones,
+      assigned_zones: assignedZones, // Note: For future improvements, this might only pass new zones
       starts_at: startDateTime,
       ends_at: endDateTime,
       type: 'volunteer_access_assigned',
@@ -186,9 +239,15 @@ export async function POST(
     // Trigger background processor to pick up the newly created jobs immediately
     await integrationsService.triggerJobProcessor();
 
-    return NextResponse.json({ success: true, message: 'Volunteer assigned successfully' });
+    return NextResponse.json({ 
+      success: true, 
+      existingUser: !isNewUser,
+      assignmentCreated: true,
+      message: 'Volunteer assigned successfully' 
+    });
   } catch (error: any) {
     console.error('Error in invite API:', error);
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
+
