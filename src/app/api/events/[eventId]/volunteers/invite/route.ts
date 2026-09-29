@@ -57,11 +57,13 @@ export async function POST(
 
     let existingUser = null;
     let page = 1;
+    const cleanEmail = email.trim().toLowerCase();
+    
     while (true) {
       const { data: usersData } = await adminClient.auth.admin.listUsers({ page, perPage: 1000 });
       if (!usersData || !usersData.users || usersData.users.length === 0) break;
       
-      const found = usersData.users.find((u: any) => u.email === email);
+      const found = usersData.users.find((u: any) => u.email?.toLowerCase() === cleanEmail);
       if (found) {
         existingUser = found;
         break;
@@ -93,7 +95,7 @@ export async function POST(
     } else {
       // User does NOT exist in auth.users -> create a minimal account for them
       const { data: newAuthUser, error: createUserError } = await adminClient.auth.admin.createUser({
-        email,
+        email: cleanEmail,
         email_confirm: true,
         user_metadata: { source: 'volunteer_scanner_invite' }
       });
@@ -158,7 +160,7 @@ export async function POST(
     const payload = {
       event_id: eventId,
       assignment_id: assignmentId,
-      recipient_email: email,
+      recipient_email: cleanEmail,
       recipient_name: recipientName,
       event_name: eventName,
       event_date: eventData ? `${eventData.start_date}T${eventData.start_time}` : null,
