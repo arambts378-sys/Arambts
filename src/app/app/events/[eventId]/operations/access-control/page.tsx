@@ -72,7 +72,7 @@ export default function AccessControlPage() {
           starts_at,
           ends_at,
           access_zones ( id, name ),
-          profiles ( id, full_name )
+          profiles!event_staff_assignments_user_id_fkey ( id, full_name )
         `)
         .eq('event_id', eventId);
 
