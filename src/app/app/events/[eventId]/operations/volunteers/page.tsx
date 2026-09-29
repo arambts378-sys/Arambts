@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function VolunteersPage({ params }: { params: { eventId: string } }) {
+export default function VolunteersPage({ params }: { params: Promise<{ eventId: string }> }) {
+  const { eventId } = use(params);
   const router = useRouter();
   const [volunteers, setVolunteers] = useState<any[]>([]);
   const [zones, setZones] = useState<any[]>([]);
@@ -13,14 +14,14 @@ export default function VolunteersPage({ params }: { params: { eventId: string }
   
   useEffect(() => {
     fetchData();
-  }, [params.eventId]);
+  }, [eventId]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       const [volRes, zoneRes] = await Promise.all([
-        fetch(`/api/events/${params.eventId}/volunteers`),
-        fetch(`/api/events/${params.eventId}/check-in/zones`) // Assuming this endpoint exists or similar
+        fetch(`/api/events/${eventId}/volunteers`),
+        fetch(`/api/events/${eventId}/check-in/zones`) // Assuming this endpoint exists or similar
       ]);
       
       if (!volRes.ok) throw new Error('Failed to fetch volunteers');
@@ -42,7 +43,7 @@ export default function VolunteersPage({ params }: { params: { eventId: string }
     e.preventDefault();
     setError(null);
     try {
-      const res = await fetch(`/api/events/${params.eventId}/volunteers`, {
+      const res = await fetch(`/api/events/${eventId}/volunteers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -61,7 +62,7 @@ export default function VolunteersPage({ params }: { params: { eventId: string }
   const handleRemoveVolunteer = async (userId: string) => {
     if (!confirm('Are you sure you want to revoke this volunteer?')) return;
     try {
-      const res = await fetch(`/api/events/${params.eventId}/volunteers/${userId}`, {
+      const res = await fetch(`/api/events/${eventId}/volunteers/${userId}`, {
         method: 'DELETE'
       });
       if (!res.ok) throw new Error('Failed to remove volunteer');
@@ -75,10 +76,10 @@ export default function VolunteersPage({ params }: { params: { eventId: string }
     try {
       if (isAssigned) {
         // Remove
-        await fetch(`/api/events/${params.eventId}/volunteers/${userId}/zones/${zoneId}`, { method: 'DELETE' });
+        await fetch(`/api/events/${eventId}/volunteers/${userId}/zones/${zoneId}`, { method: 'DELETE' });
       } else {
         // Add
-        await fetch(`/api/events/${params.eventId}/volunteers/${userId}/zones`, {
+        await fetch(`/api/events/${eventId}/volunteers/${userId}/zones`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ zoneId })

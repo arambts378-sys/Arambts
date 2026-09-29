@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
 const QRScanner = dynamic(() => import('@/components/check-in/QRScanner'), { ssr: false });
 
-export default function VolunteerScannerPage({ params }: { params: { eventId: string } }) {
+export default function VolunteerScannerPage({ params }: { params: Promise<{ eventId: string }> }) {
+  const { eventId } = use(params);
   const router = useRouter();
   const [zones, setZones] = useState<any[]>([]);
   const [selectedZone, setSelectedZone] = useState<string>('');
@@ -22,7 +23,7 @@ export default function VolunteerScannerPage({ params }: { params: { eventId: st
         return res.json();
       })
       .then(data => {
-        const assignment = data.find((a: any) => a.event_id === params.eventId);
+        const assignment = data.find((a: any) => a.event_id === eventId);
         if (!assignment) {
           throw new Error('You do not have an active assignment for this event.');
         }
@@ -38,7 +39,7 @@ export default function VolunteerScannerPage({ params }: { params: { eventId: st
         setError(err.message);
         setLoading(false);
       });
-  }, [params.eventId]);
+  }, [eventId]);
 
   const handleScanResult = (result: any) => {
     setLogs(prev => [result, ...prev].slice(0, 5)); // Keep last 5 logs
@@ -83,7 +84,7 @@ export default function VolunteerScannerPage({ params }: { params: { eventId: st
       <div className="flex-1 flex flex-col p-4">
         {selectedZone ? (
           <QRScanner 
-            eventId={params.eventId} 
+            eventId={eventId} 
             accessZoneId={selectedZone} 
             onScanResult={handleScanResult}
           />
