@@ -8,6 +8,7 @@ import { encryptSecret } from '@/utils/encryption';
 
 async function resolveOrCreateVolunteerAuthUser(adminClient: any, email: string) {
   const cleanEmail = email.trim().toLowerCase();
+  const maskedEmail = cleanEmail.substring(0, 3) + '***@' + cleanEmail.split('@')[1];
   
   console.log(`[VOLUNTEER] AUTH_LOOKUP_START`);
 
@@ -44,7 +45,7 @@ async function resolveOrCreateVolunteerAuthUser(adminClient: any, email: string)
   // 2. Return if user already exists
   if (existingUser) {
     console.log(`[VOLUNTEER] AUTH_EXISTING_USER_FOUND`);
-    return { user: existingUser, created: false };
+    return { user: existingUser, created: false, maskedEmail };
   }
 
   // 3. Attempt to create the user if not found
@@ -80,14 +81,14 @@ async function resolveOrCreateVolunteerAuthUser(adminClient: any, email: string)
 
     if (raceExistingUser) {
       console.log(`[VOLUNTEER] AUTH_EXISTING_USER_FOUND (via race condition fallback)`);
-      return { user: raceExistingUser, created: false };
+      return { user: raceExistingUser, created: false, maskedEmail };
     }
 
     throw new Error('Failed to create volunteer account: ' + errMessage);
   }
 
   console.log(`[VOLUNTEER] AUTH_CREATED`);
-  return { user: newAuthUser.user, created: true };
+  return { user: newAuthUser.user, created: true, maskedEmail };
 }
 
 export async function POST(
