@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
 import { createClient } from '@/lib/supabase/client';
+import { getVolunteerEmails } from './actions';
 
 export default function AccessControlPage() {
   const routeParams = useParams();
@@ -20,6 +21,7 @@ export default function AccessControlPage() {
   const [emailJobs, setEmailJobs] = useState<any[]>([]);
   const [workspaceMembers, setWorkspaceMembers] = useState<any[]>([]);
   const [recentScans, setRecentScans] = useState<any[]>([]);
+  const [volunteerEmails, setVolunteerEmails] = useState<Record<string, string>>({});
 
   // Modals
   const [isAddZoneModalOpen, setIsAddZoneModalOpen] = useState(false);
@@ -76,7 +78,15 @@ export default function AccessControlPage() {
         `)
         .eq('event_id', eventId);
 
-      if (assignmentsData) setAssignments(assignmentsData);
+      if (assignmentsData) {
+        setAssignments(assignmentsData);
+        // Fetch emails securely via server action
+        const userIds = assignmentsData.map((a: any) => a.profiles?.id).filter(Boolean);
+        if (userIds.length > 0) {
+          const emails = await getVolunteerEmails(userIds);
+          setVolunteerEmails(emails);
+        }
+      }
 
       // Load members for dropdown (optional, could just use email input as requested, but good for existing members)
       const { data: membersData } = await supabase
@@ -460,7 +470,7 @@ export default function AccessControlPage() {
                       return (
                         <tr key={`assign-${a.id}`} className="hover:bg-surface-container/30">
                           <td className="px-6 py-4 font-bold">{a.profiles?.full_name || 'Existing User'}</td>
-                          <td className="px-6 py-4 text-on-surface-variant">{a.profiles?.email || 'N/A'}</td>
+                          <td className="px-6 py-4 text-on-surface-variant">{a.profiles?.id ? (volunteerEmails[a.profiles.id] || 'N/A') : 'N/A'}</td>
                           <td className="px-6 py-4 font-medium">{a.access_zones?.name}</td>
                           <td className="px-6 py-4 text-sm text-on-surface-variant">
                             {a.starts_at ? new Date(a.starts_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Anytime'} - 
@@ -478,7 +488,7 @@ export default function AccessControlPage() {
                           </td>
                           <td className="px-6 py-4 flex items-center gap-3">
                             <button className="text-primary hover:underline text-sm font-bold">Edit</button>
-                            <button onClick={() => handleResendEmail('assignment', a.id, a.profiles?.email)} className="text-primary hover:underline text-sm font-bold">Resend Email</button>
+                            <button onClick={() => handleResendEmail('assignment', a.id, a.profiles?.id ? volunteerEmails[a.profiles.id] : '')} className="text-primary hover:underline text-sm font-bold">Resend Email</button>
                             {a.active && (
                               <button onClick={() => handleDeactivateAssignment(a.id)} className="text-error hover:underline text-sm font-bold">
                                 Deactivate
