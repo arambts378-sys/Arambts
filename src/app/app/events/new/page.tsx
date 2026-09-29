@@ -4,6 +4,7 @@ import React, { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
 import { Event, WebsiteConfig } from '@/types';
+import { createClient } from '@/lib/supabase/client';
 
 export default function CreateEventPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -26,6 +27,18 @@ export default function CreateEventPage() {
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Walkathon specific state
+  const [walkathonDistances, setWalkathonDistances] = useState([
+    { distance_km: 3, name: '3 KM', capacity: '', is_active: true },
+    { distance_km: 5, name: '5 KM', capacity: '', is_active: true }
+  ]);
+
+  const handleWalkathonDistanceChange = (index: number, field: string, value: any) => {
+    const newDistances = [...walkathonDistances];
+    newDistances[index] = { ...newDistances[index], [field]: value };
+    setWalkathonDistances(newDistances);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -57,45 +70,114 @@ export default function CreateEventPage() {
     const eventId = Math.random().toString(36).substring(2, 10);
     const slug = formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + eventId.substring(0,4);
 
-    const defaultWebsite: WebsiteConfig = {
-      templateId: 'minimal',
-      status: 'draft',
-      sections: [
-        { id: 'home', type: 'home', visible: true, order: 0 },
-        { id: 'about', type: 'about', visible: true, order: 1 },
-        { id: 'speakers', type: 'speakers', visible: false, order: 2 },
-        { id: 'agenda', type: 'agenda', visible: false, order: 3 },
-        { id: 'sponsors', type: 'sponsors', visible: false, order: 4 },
-        { id: 'volunteers', type: 'volunteers', visible: false, order: 5 },
-        { id: 'register', type: 'register', visible: true, order: 6 },
-        { id: 'venue', type: 'venue', visible: formData.format !== 'Virtual', order: 7 },
-        { id: 'contact', type: 'contact', visible: true, order: 8 },
-        { id: 'footer', type: 'footer', visible: true, order: 9 },
-      ]
-    };
-
-    const newEvent: Event = {
-      id: eventId,
-      slug: slug,
-      name: formData.name,
-      type: formData.type,
-      format: formData.format,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
-      startTime: formData.startTime,
-      endTime: formData.endTime,
-      timezone: formData.timezone,
-      location: formData.location,
-      description: formData.description,
-      status: 'draft',
-      createdAt: new Date().toISOString(),
-      flyer: fileName || undefined,
-      website: defaultWebsite
-    };
-
     try {
       setIsSubmitting(true);
+      
+      let uploadedFlyerUrl = '';
+      if (fileInputRef.current?.files?.length) {
+        const supabase = createClient();
+        const file = fileInputRef.current.files[0];
+        const fileExt = file.name.split('.').pop();
+        const storedFileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+        const filePath = `website_flyers/${storedFileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('event-flyers')
+          .upload(filePath, file);
+
+        if (uploadError) {
+          setError('Failed to upload flyer: ' + uploadError.message);
+          setIsSubmitting(false);
+          return;
+        }
+
+        const { data } = supabase.storage
+          .from('event-flyers')
+          .getPublicUrl(filePath);
+          
+        uploadedFlyerUrl = data.publicUrl;
+      }
+
+      const defaultWebsite: WebsiteConfig = {
+        status: 'draft',
+        draft: {
+          templateId: 'minimal',
+          status: 'draft',
+          theme: {},
+          sections: [
+            { id: 'header', type: 'header', visible: true, order: 0 },
+            { 
+              id: 'hero', 
+              type: 'hero', 
+              visible: true, 
+              order: 1,
+              content: uploadedFlyerUrl ? {
+                image: uploadedFlyerUrl,
+                layout: 'banner',
+                showEventInfo: false
+              } : {}
+            },
+            { id: 'event_info', type: 'event_info', visible: true, order: 2 },
+            { id: 'about', type: 'about', visible: true, order: 3 },
+            { id: 'speakers', type: 'speakers', visible: false, order: 4 },
+            { id: 'agenda', type: 'agenda', visible: false, order: 5 },
+            { id: 'register', type: 'register', visible: true, order: 6 },
+            { id: 'venue', type: 'venue', visible: formData.format !== 'Virtual', order: 7 },
+            { id: 'sponsors', type: 'sponsors', visible: false, order: 8 },
+            { id: 'exhibitors', type: 'exhibitors', visible: false, order: 9 },
+            { id: 'contact', type: 'contact', visible: true, order: 10 },
+            { id: 'final_cta', type: 'final_cta', visible: true, order: 11 },
+            { id: 'footer', type: 'footer', visible: true, order: 12 },
+          ]
+        }
+      };
+
+      const newEvent: Event = {
+        id: eventId,
+        slug: slug,
+        name: formData.name,
+        type: formData.type,
+        format: formData.format,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+        timezone: formData.timezone,
+        location: formData.location,
+        description: formData.description,
+        status: 'draft',
+        createdAt: new Date().toISOString(),
+        flyer: uploadedFlyerUrl || undefined,
+        website: defaultWebsite
+      };
+
       const createdEvent = await createEvent(newEvent);
+
+      // If Walkathon, create distance categories
+      if (formData.type === 'Walkathon') {
+        const supabase = createClient();
+        
+        // Filter out inactive ones, or keep them but set is_active
+        const distanceInserts = walkathonDistances.map(d => ({
+          event_id: createdEvent.id,
+          distance_km: d.distance_km,
+          name: d.name,
+          capacity: d.capacity ? parseInt(d.capacity as string) : null,
+          is_active: d.is_active
+        }));
+        
+        if (distanceInserts.length > 0) {
+          const { error: distanceError } = await supabase
+            .from('walkathon_distance_categories')
+            .insert(distanceInserts);
+            
+          if (distanceError) {
+            console.error('Failed to create walkathon distances:', distanceError);
+            // Non-blocking error for event creation, but should be handled better in prod
+          }
+        }
+      }
+
       router.push(`/app/events/${createdEvent.id}`);
     } catch (err: any) {
       setError(err.message || 'Failed to create event. Please try again.');
@@ -188,6 +270,7 @@ export default function CreateEventPage() {
               <option value="Summit">Summit</option>
               <option value="Networking">Networking</option>
               <option value="Training">Training</option>
+              <option value="Walkathon">Walkathon</option>
               <option value="Other">Other</option>
             </select>
             <span className="material-symbols-outlined pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#6B6B6B] text-[20px]">
@@ -362,6 +445,63 @@ export default function CreateEventPage() {
           className="w-full px-4 py-3.5 bg-white border border-[#E7E2DD] rounded-xl text-base text-[#171717] placeholder:text-[#9E9E9E] focus:outline-none focus:ring-2 focus:ring-[#7A1F3D]/20 focus:border-[#7A1F3D] transition-all shadow-xs resize-y"
         ></textarea>
       </div>
+
+      {formData.type === 'Walkathon' && (
+        <div className="space-y-4 pt-6 border-t border-[#E7E2DD]">
+          <div>
+            <h3 className="text-lg font-bold text-[#171717]">Walkathon Configuration</h3>
+            <p className="text-sm text-[#6B6B6B]">Configure the distances available for this walkathon.</p>
+          </div>
+          
+          <div className="space-y-4">
+            {walkathonDistances.map((distance, index) => (
+              <div key={index} className="flex items-center gap-4 p-4 rounded-xl border border-[#E7E2DD] bg-[#FAF8F5]">
+                <div className="flex items-center h-5">
+                  <input
+                    type="checkbox"
+                    checked={distance.is_active}
+                    onChange={(e) => handleWalkathonDistanceChange(index, 'is_active', e.target.checked)}
+                    className="w-4 h-4 text-[#7A1F3D] border-[#D5CDC5] rounded focus:ring-[#7A1F3D]"
+                  />
+                </div>
+                <div className="flex-1 grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#6B6B6B] mb-1">Distance (KM)</label>
+                    <input
+                      type="number"
+                      value={distance.distance_km}
+                      onChange={(e) => handleWalkathonDistanceChange(index, 'distance_km', parseFloat(e.target.value))}
+                      className="w-full px-3 py-2 bg-white border border-[#E7E2DD] rounded-lg text-sm"
+                      disabled={!distance.is_active}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-[#6B6B6B] mb-1">Name</label>
+                    <input
+                      type="text"
+                      value={distance.name}
+                      onChange={(e) => handleWalkathonDistanceChange(index, 'name', e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-[#E7E2DD] rounded-lg text-sm"
+                      disabled={!distance.is_active}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-[#6B6B6B] mb-1">Capacity (Optional)</label>
+                    <input
+                      type="number"
+                      placeholder="Unlimited"
+                      value={distance.capacity}
+                      onChange={(e) => handleWalkathonDistanceChange(index, 'capacity', e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-[#E7E2DD] rounded-lg text-sm"
+                      disabled={!distance.is_active}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="pt-4 border-t border-[#E7E2DD]"></div>
 

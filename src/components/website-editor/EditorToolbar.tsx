@@ -2,7 +2,7 @@
 import React from 'react';
 import Link from 'next/link';
 
-export default function EditorToolbar({ event, onPublish, publishing, setViewport, viewport, setZoom, zoom, undo, redo, canUndo, canRedo, handleSave }: any) {
+export default function EditorToolbar({ event, onPublish, publishing, setViewport, viewport, setZoom, zoom, undo, redo, canUndo, canRedo, handleSave, saving }: any) {
   return (
     <header className="h-14 bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between px-space-md z-30 shrink-0 select-none">
       <div className="flex items-center gap-space-sm">
@@ -48,9 +48,9 @@ export default function EditorToolbar({ event, onPublish, publishing, setViewpor
       </div>
 
       <div className="flex items-center gap-2">
-        <button onClick={handleSave} className="flex items-center gap-1.5 px-3 py-1.5 rounded border text-label-md font-label-md bg-surface-container-lowest">
-          <span className="material-symbols-outlined text-[16px]">save</span>
-          <span>Save</span>
+        <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-3 py-1.5 rounded border text-label-md font-label-md bg-surface-container-lowest disabled:opacity-50">
+          <span className="material-symbols-outlined text-[16px]">{saving ? 'sync' : 'save'}</span>
+          <span>{saving ? 'Saving...' : 'Save'}</span>
         </button>
         <button onClick={onPublish} disabled={publishing} className="flex items-center gap-1.5 px-4 py-1.5 rounded bg-primary-container text-on-primary font-semibold">
           <span>{publishing ? 'Publishing...' : 'Publish Website'}</span>

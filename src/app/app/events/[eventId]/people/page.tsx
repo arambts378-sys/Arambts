@@ -6,6 +6,7 @@ import { useAppContext } from '@/context/AppContext';
 import { peopleService } from '@/services/people';
 import { EventPerson, EventPersonType, EventPersonStatus } from '@/types';
 import PersonModal, { PersonFormData } from '@/components/people/PersonModal';
+import AttendeeImportModal from '@/components/people/AttendeeImportModal';
 
 export default function PeoplePage() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function PeoplePage() {
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [selectedPerson, setSelectedPerson] = useState<EventPerson | null>(null);
 
@@ -170,6 +172,13 @@ export default function PeoplePage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsImportModalOpen(true)}
+              className="px-5 py-2.5 bg-surface-container-highest text-on-surface text-label-md font-bold rounded hover:bg-surface-container-highest/80 transition-colors flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-[18px]">upload_file</span>
+              Import Attendees
+            </button>
             <button 
               onClick={() => {
                 setModalMode('add');
@@ -356,6 +365,15 @@ export default function PeoplePage() {
         onSave={handleSavePerson}
         initialData={selectedPerson}
         mode={modalMode}
+      />
+
+      <AttendeeImportModal 
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        eventId={eventId}
+        onSuccess={() => {
+          fetchPeople();
+        }}
       />
     </div>
   );

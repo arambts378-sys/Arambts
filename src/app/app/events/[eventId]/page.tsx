@@ -128,6 +128,16 @@ export default function EventWorkspacePage() {
             </div>
           </Link>
 
+          <Link href={`/app/events/${event.id}/operations/access-control`} className="group p-5 bg-white border border-outline-variant rounded-xl hover:border-primary/40 hover:shadow-sm transition-all flex flex-col gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center">
+              <span className="material-symbols-outlined">qr_code_scanner</span>
+            </div>
+            <div>
+              <h4 className="text-label-md font-bold text-on-surface group-hover:text-primary transition-colors">QR & Access</h4>
+              <p className="text-body-sm text-on-surface-variant mt-1">Configure QR access, checkpoints, entitlements, and volunteer permissions.</p>
+            </div>
+          </Link>
+
         </div>
 
       </main>

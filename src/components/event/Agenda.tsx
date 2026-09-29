@@ -2,9 +2,11 @@ import { EventData } from "@/types/event";
 
 interface AgendaProps {
   event: EventData;
+  section?: any;
 }
 
-export default function Agenda({ event }: AgendaProps) {
+export default function Agenda({ event, section }: AgendaProps) {
+  const content = section?.content || {};
   return (
     <section id="agenda" className="bg-brand-white py-24 md:py-32">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -12,11 +14,11 @@ export default function Agenda({ event }: AgendaProps) {
           <div className="inline-flex items-center space-x-2 mb-6">
             <span className="w-8 h-[1px] bg-brand-maroon"></span>
             <span className="text-sm font-mono text-brand-maroon uppercase tracking-widest font-semibold">
-              Agenda
+              {content.heading || "Agenda"}
             </span>
           </div>
           <h2 className="text-4xl md:text-5xl font-medium text-brand-dark leading-tight tracking-tight">
-            Two days of ideas, conversations, and action.
+            {content.title || "Two days of ideas, conversations, and action."}
           </h2>
         </div>
 
@@ -67,8 +69,12 @@ export default function Agenda({ event }: AgendaProps) {
             ))}
           </div>
         ) : (
-          <div className="py-12 border-2 border-dashed border-brand-border rounded-xl flex items-center justify-center bg-brand-soft">
-            <p className="text-brand-muted font-medium">Agenda details will appear here.</p>
+          <div className="py-12 border-2 border-dashed border-brand-border rounded-xl flex flex-col items-center justify-center bg-brand-soft">
+            <svg className="w-12 h-12 text-brand-muted/50 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <h3 className="text-xl font-medium text-brand-dark mb-2">Agenda Available Soon</h3>
+            <p className="text-brand-muted font-medium">The event agenda is currently being finalized.</p>
           </div>
         )}
       </div>

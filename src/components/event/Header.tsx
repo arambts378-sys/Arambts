@@ -3,16 +3,33 @@
 import { useState } from "react";
 import Link from "next/link";
 
-export default function Header() {
+export default function Header({ event, section, websiteConfig }: any) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  const content = section?.content || {};
+  const logoText = content.logoText || "ARAM BTS";
+  const showLogoText = content.showLogoText ?? true;
+  const ctaText = content.ctaText || "Register Now";
+  const showCta = content.showCta ?? true;
+  const ctaDest = content.ctaDest || `/events/${event?.slug || event?.id}/register`;
 
-  const navLinks = [
-    { label: "About", href: "#about" },
-    { label: "Speakers", href: "#speakers" },
-    { label: "Agenda", href: "#agenda" },
-    { label: "Venue", href: "#venue" },
-    { label: "Sponsors", href: "#sponsors" },
+  // Generate nav links based on visible sections
+  const possibleNavSections = [
+    { id: 'about', label: 'About' },
+    { id: 'speakers', label: 'Speakers' },
+    { id: 'agenda', label: 'Agenda' },
+    { id: 'venue', label: 'Venue' },
+    { id: 'sponsors', label: 'Sponsors' },
+    { id: 'exhibitors', label: 'Exhibitors' },
+    { id: 'contact', label: 'Contact' },
   ];
+
+  const navLinks = possibleNavSections
+    .filter(nav => {
+      const sec = websiteConfig?.sections?.find((s: any) => s.id === nav.id);
+      return sec && sec.visible;
+    })
+    .map(nav => ({ label: nav.label, href: `#${nav.id}` }));
 
   return (
     <header className="sticky top-0 z-50 w-full bg-brand-soft/90 backdrop-blur-md border-b border-brand-border">
@@ -20,9 +37,11 @@ export default function Header() {
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
-            <Link href="/" className="text-xl font-bold text-brand-maroon tracking-tight">
-              ARAM BTS
-            </Link>
+            {showLogoText && (
+              <Link href="/" className="text-xl font-bold text-brand-maroon tracking-tight">
+                {logoText}
+              </Link>
+            )}
           </div>
 
           {/* Desktop Navigation */}
@@ -40,12 +59,14 @@ export default function Header() {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center">
-            <Link
-              href="#registration"
-              className="inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-md text-brand-white bg-brand-maroon hover:bg-brand-deep-maroon transition-colors"
-            >
-              Register Now
-            </Link>
+            {showCta && (
+              <Link
+                href={ctaDest}
+                className="inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-md text-brand-white bg-brand-maroon hover:bg-brand-deep-maroon transition-colors"
+              >
+                {ctaText}
+              </Link>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -88,13 +109,15 @@ export default function Header() {
                 {link.label}
               </Link>
             ))}
-            <Link
-              href="#registration"
-              className="block w-full text-center mt-4 px-3 py-3 rounded-md text-base font-medium text-brand-white bg-brand-maroon hover:bg-brand-deep-maroon"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Register Now
-            </Link>
+            {showCta && (
+              <Link
+                href={ctaDest}
+                className="block w-full text-center mt-4 px-3 py-3 rounded-md text-base font-medium text-brand-white bg-brand-maroon hover:bg-brand-deep-maroon"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {ctaText}
+              </Link>
+            )}
           </div>
         </div>
       )}

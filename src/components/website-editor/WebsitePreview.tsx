@@ -1,8 +1,8 @@
-
 import React from 'react';
 import { templates } from '@/data/templates';
+import EventWebsiteRenderer from '@/components/event/EventWebsiteRenderer';
 
-export default function WebsitePreview({ event, draft, viewport, zoom }: any) {
+export default function WebsitePreview({ event, draft, viewport, zoom, activeSectionId, onSectionClick }: any) {
   const template = templates.find(t => t.id === draft.templateId) || templates[0];
   
   let width = '100%';
@@ -25,17 +25,14 @@ export default function WebsitePreview({ event, draft, viewport, zoom }: any) {
         }} 
         className="shadow-2xl transition-all duration-300"
       >
-        {/* Render sections based on config */}
-        {visibleSections.map((section: any) => (
-          <div key={section.id} className="p-8 border-b" style={{ borderColor: template.colors.secondary }}>
-            <h2 className="text-3xl font-bold mb-4" style={{ color: template.colors.primary }}>
-              {section.id === 'hero' ? event.name : section.type.toUpperCase()}
-            </h2>
-            {section.id === 'hero' && <p>{event.description}</p>}
-            {section.id === 'venue' && <p>{event.location}</p>}
-            <p className="opacity-70 text-sm mt-4">Section Type: {section.type}</p>
-          </div>
-        ))}
+        {/* Render sections based on config using shared renderer */}
+        <EventWebsiteRenderer 
+          event={event} 
+          websiteConfig={draft} 
+          mode="editor" 
+          activeSectionId={activeSectionId} 
+          onSectionClick={onSectionClick} 
+        />
       </div>
     </div>
   );

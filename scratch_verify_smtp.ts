@@ -1,0 +1,38 @@
+import { createClient } from '@supabase/supabase-js';
+import * as dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+async function run() {
+  const eventId = 'aa9e1dc3-b19f-436d-a42c-14b9895b6288';
+  
+  const { data, error } = await supabase
+    .from('event_integrations')
+    .select('*')
+    .eq('event_id', eventId)
+    .eq('provider', 'email');
+    
+  if (error) {
+    console.error(error);
+    return;
+  }
+  
+  if (data && data.length > 0) {
+    const config = data[0].config;
+    console.log("Provider:", data[0].provider);
+    console.log("Enabled:", data[0].is_active);
+    console.log("Host Presence:", !!config?.host, config?.host);
+    console.log("Port:", config?.port);
+    console.log("Username Presence:", !!config?.user, config?.user);
+    console.log("Encrypted Password Presence:", !!config?.pass);
+    console.log("From Email:", config?.fromEmail);
+    console.log("From Name:", config?.fromName);
+  } else {
+    console.log("No email integration found for event.");
+  }
+}
+
+run().catch(console.error);

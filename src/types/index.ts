@@ -9,7 +9,16 @@ export interface WebsiteSection {
   type: string;
   visible: boolean;
   order: number;
-  content?: any;
+  content?: {
+    image?: string;
+    layout?: 'banner' | 'split';
+    imageFit?: 'contain' | 'cover';
+    imageAlignment?: 'left' | 'center' | 'right';
+    overlay?: 'none' | 'light' | 'dark';
+    showEventInfo?: boolean;
+    heroHeight?: 'small' | 'medium' | 'large';
+    [key: string]: any;
+  };
 }
 
 export interface ThemeConfig {
@@ -131,6 +140,19 @@ export interface Registration {
   metadata: any;
   created_at: string;
   updated_at: string;
+  distance_category_id?: string | null;
   person?: Person; // Joined data
   event_person?: EventPerson; // Joined data
+  distance_category?: WalkathonDistanceCategory; // Joined data
+}
+
+export interface WalkathonDistanceCategory {
+  id: string;
+  event_id: string;
+  distance_km: number;
+  name: string;
+  capacity?: number | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }

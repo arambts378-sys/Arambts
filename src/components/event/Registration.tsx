@@ -6,9 +6,10 @@ import { useParams } from 'next/navigation';
 import { registrationsService } from '@/services/registrations';
 import { EventRegistrationSettings } from '@/types';
 
-export default function Registration({ event }: { event?: any }) {
+export default function Registration({ event, section }: { event?: any; section?: any }) {
   const routeParams = useParams();
   const slug = routeParams?.slug as string;
+  const content = section?.content || {};
   const [settings, setSettings] = useState<EventRegistrationSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -46,14 +47,14 @@ export default function Registration({ event }: { event?: any }) {
             <div className="inline-flex items-center space-x-2 mb-6">
               <span className="w-8 h-[1px] bg-brand-maroon"></span>
               <span className="text-sm font-mono text-brand-maroon uppercase tracking-widest font-semibold">
-                Registration
+                {content.heading || "Registration"}
               </span>
             </div>
             <h2 className="text-4xl md:text-5xl font-medium text-brand-dark leading-tight tracking-tight mb-6">
-              {settings.title || 'Reserve your place.'}
+              {content.title || settings.title || 'Reserve your place.'}
             </h2>
             <p className="text-xl text-brand-muted leading-relaxed whitespace-pre-line">
-              {settings.description || 'Join leaders and decision-makers for two days of meaningful conversations and high-impact networking.'}
+              {content.description || settings.description || 'Join leaders and decision-makers for two days of meaningful conversations and high-impact networking.'}
             </p>
           </div>
 
@@ -67,10 +68,10 @@ export default function Registration({ event }: { event?: any }) {
               </p>
               
               <Link
-                href={`/events/${slug}/register`}
+                href={content.buttonUrl || `/events/${event?.slug || event?.id || slug}/register`}
                 className="block w-full text-center px-8 py-4 text-lg font-medium text-brand-white bg-brand-maroon hover:bg-brand-deep-maroon transition-all duration-300 rounded-sm"
               >
-                Register Now
+                {content.buttonText || "Register Now"}
               </Link>
             </div>
           </div>

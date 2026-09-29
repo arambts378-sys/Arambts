@@ -7,16 +7,23 @@ import { useAppContext } from '@/context/AppContext';
 import EditorToolbar from '@/components/website-editor/EditorToolbar';
 import WebsitePreview from '@/components/website-editor/WebsitePreview';
 import TemplateGallery from '@/components/website-editor/TemplateGallery';
+import SectionPropertiesPanel from '@/components/website-editor/SectionPropertiesPanel';
 import { templates } from '@/data/templates';
 
 const defaultSections = [
+  { id: 'header', type: 'header', visible: true, order: 0 },
   { id: 'hero', type: 'hero', visible: true, order: 1 },
-  { id: 'about', type: 'about', visible: true, order: 2 },
-  { id: 'speakers', type: 'speakers', visible: true, order: 3 },
-  { id: 'agenda', type: 'agenda', visible: true, order: 4 },
-  { id: 'sponsors', type: 'sponsors', visible: true, order: 5 },
-  { id: 'venue', type: 'venue', visible: true, order: 6 },
-  { id: 'contact', type: 'contact', visible: true, order: 7 }
+  { id: 'event_info', type: 'event_info', visible: true, order: 2 },
+  { id: 'about', type: 'about', visible: true, order: 3 },
+  { id: 'speakers', type: 'speakers', visible: true, order: 4 },
+  { id: 'agenda', type: 'agenda', visible: true, order: 5 },
+  { id: 'register', type: 'register', visible: true, order: 6 },
+  { id: 'venue', type: 'venue', visible: true, order: 7 },
+  { id: 'sponsors', type: 'sponsors', visible: true, order: 8 },
+  { id: 'exhibitors', type: 'exhibitors', visible: true, order: 9 },
+  { id: 'contact', type: 'contact', visible: true, order: 10 },
+  { id: 'final_cta', type: 'final_cta', visible: true, order: 11 },
+  { id: 'footer', type: 'footer', visible: true, order: 12 }
 ];
 
 export default function EventOverviewPage() {
@@ -31,6 +38,8 @@ export default function EventOverviewPage() {
   const [draft, setDraft] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const event = getEvent(eventId);
 
@@ -96,19 +105,40 @@ export default function EventOverviewPage() {
     const tempOrder = newSections[idx].order;
     newSections[idx].order = newSections[swapIdx].order;
     newSections[swapIdx].order = tempOrder;
-    
-    pushHistory({ ...draft, sections: newSections.sort((a,b) => a.order - b.order) });
+    pushHistory({ ...draft, sections: newSections.sort((a: any, b: any) => a.order - b.order) });
   };
 
-  const handleSave = () => {
-    updateEvent({
-      ...event,
-      website: {
-        ...event.website,
-        draft
+  const updateSectionConfig = (sectionId: string, updates: any) => {
+    const newSections = draft.sections.map((s: any) => {
+      if (s.id === sectionId) {
+        return {
+          ...s,
+          content: { ...s.content, ...updates }
+        };
       }
+      return s;
     });
-    alert('Saved as draft!');
+    pushHistory({ ...draft, sections: newSections });
+  };
+
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      await updateEvent({
+        ...event,
+        website: {
+          ...event.website,
+          draft
+        }
+      });
+      alert('Saved as draft!');
+    } catch (err) {
+      console.error('Error saving draft:', err);
+      alert('Failed to save draft. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handlePublish = () => {
@@ -144,27 +174,48 @@ export default function EventOverviewPage() {
         canUndo={historyIndex > 0}
         canRedo={historyIndex < history.length - 1}
         handleSave={handleSave}
+        saving={saving}
       />
       
       <div className="flex flex-1 min-h-0 relative">
-        <aside className="w-[280px] bg-surface-container-lowest border-r flex flex-col">
-          <div className="p-3 font-semibold border-b">Website Sections</div>
-          <div className="p-2 space-y-2 overflow-y-auto">
-            {draft.sections.map((section: any) => (
-              <div key={section.id} className="flex items-center justify-between p-2 border rounded hover:bg-surface-container">
-                <span>{section.id}</span>
-                <div className="flex gap-2">
-                  <button onClick={() => handleToggleSection(section.id)}>
-                    <span className="material-symbols-outlined text-[16px]">
-                      {section.visible ? 'visibility' : 'visibility_off'}
-                    </span>
-                  </button>
-                  <button onClick={() => handleMoveSection(section.id, 'up')}><span className="material-symbols-outlined text-[16px]">arrow_upward</span></button>
-                  <button onClick={() => handleMoveSection(section.id, 'down')}><span className="material-symbols-outlined text-[16px]">arrow_downward</span></button>
-                </div>
-              </div>
-            ))}
+        <aside className="w-[320px] bg-surface-container-lowest border-r flex flex-col h-full overflow-y-auto custom-scroll">
+          <div className="p-3 font-semibold border-b flex justify-between items-center">
+            <span>{activeSectionId ? `${activeSectionId.toUpperCase()} Settings` : 'Website Sections'}</span>
+            {activeSectionId && (
+              <button onClick={() => setActiveSectionId(null)} className="text-sm font-medium text-brand-maroon hover:underline">
+                Back
+              </button>
+            )}
           </div>
+          
+          {!activeSectionId ? (
+            <div className="p-2 space-y-2">
+              {draft.sections.map((section: any) => (
+                <div key={section.id} className="flex items-center justify-between p-2 border rounded hover:bg-surface-container cursor-pointer" onClick={(e) => {
+                  if ((e.target as HTMLElement).closest('button')) return;
+                  setActiveSectionId(section.id);
+                }}>
+                  <span>{section.id}</span>
+                  <div className="flex gap-2">
+                    <button onClick={(e) => { e.stopPropagation(); handleToggleSection(section.id); }}>
+                      <span className="material-symbols-outlined text-[16px]">
+                        {section.visible ? 'visibility' : 'visibility_off'}
+                      </span>
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); handleMoveSection(section.id, 'up'); }}><span className="material-symbols-outlined text-[16px]">arrow_upward</span></button>
+                    <button onClick={(e) => { e.stopPropagation(); handleMoveSection(section.id, 'down'); }}><span className="material-symbols-outlined text-[16px]">arrow_downward</span></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-4 space-y-6">
+              <SectionPropertiesPanel 
+                section={draft.sections.find((s: any) => s.id === activeSectionId)} 
+                updateSection={(updates: any) => updateSectionConfig(activeSectionId, updates)} 
+              />
+            </div>
+          )}
         </aside>
 
         <WebsitePreview 
@@ -172,6 +223,8 @@ export default function EventOverviewPage() {
           draft={draft} 
           viewport={viewport} 
           zoom={zoom} 
+          activeSectionId={activeSectionId}
+          onSectionClick={setActiveSectionId}
         />
 
         <TemplateGallery 
