@@ -20,56 +20,49 @@ async function resolveOrCreateVolunteerAuthUser(adminClient: any, email: string,
   });
 
   if (createUserError) {
-    const errMessage = createUserError.message || '';
-    const isDuplicate = createUserError.status === 422 ||
-                        createUserError.code === 'user_already_exists' ||
-                        createUserError.code === 'email_exists' ||
-                        errMessage.toLowerCase().includes('already');
+    // Supabase Auth error structures and messages for duplicate users can vary wildly between environments and GoTrue versions.
+    // Instead of relying on brittle string matching or error codes, we unconditionally perform a reliable paginated lookup.
+    // If the user is found, we treat it as an existing user. If not, we throw the original error.
+    let existingUser = null;
+    let page = 1;
+    const perPage = 1000;
+    const MAX_PAGES = 100;
 
-    if (isDuplicate) {
-      console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_AUTH_DUPLICATE_DETECTED error code: ${createUserError.code}, status: ${createUserError.status}`);
-      let existingUser = null;
-      let page = 1;
-      const perPage = 1000;
-      const MAX_PAGES = 100;
-
-      // Robustly paginate through users until found or exhausted
-      while (page <= MAX_PAGES) {
-        const { data: usersData, error: listError } = await adminClient.auth.admin.listUsers({ page, perPage });
-        
-        if (listError) {
-          throw new Error(`Failed to list users during duplicate resolution: ${listError.message}`);
-        }
-
-        if (!usersData || !usersData.users || usersData.users.length === 0) {
-          break;
-        }
-
-        const found = usersData.users.find((u: any) => u.email?.toLowerCase() === cleanEmail);
-        if (found) {
-          existingUser = found;
-          break;
-        }
-
-        if (usersData.users.length < perPage) {
-          break;
-        }
-
-        page++;
+    while (page <= MAX_PAGES) {
+      const { data: usersData, error: listError } = await adminClient.auth.admin.listUsers({ page, perPage });
+      
+      if (listError) {
+        throw new Error(`Failed to list users during duplicate resolution: ${listError.message}`);
       }
 
-      if (!existingUser) {
-        throw new Error('User was reported as already registered, but could not be found after exhausting pagination lookup.');
+      if (!usersData || !usersData.users || usersData.users.length === 0) {
+        break;
       }
 
-      console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_AUTH_EXISTING_USER_FOUND`);
-      return { user: existingUser, created: false, maskedEmail };
+      const found = usersData.users.find((u: any) => u.email?.toLowerCase() === cleanEmail);
+      if (found) {
+        existingUser = found;
+        break;
+      }
+
+      if (usersData.users.length < perPage) {
+        break;
+      }
+
+      page++;
     }
 
+    if (existingUser) {
+      return { user: existingUser, created: false };
+    }
+
+    // If the user does not exist, the error was NOT a duplicate-user error (e.g., rate limit, invalid format).
+    // In this case, we throw the original error.
+    const errMessage = createUserError.message || String(createUserError);
     throw new Error('Failed to create volunteer account: ' + errMessage);
   }
 
-  return { user: newAuthUser.user, created: true, maskedEmail };
+  return { user: newAuthUser.user, created: true };
 }
 
 export async function POST(
