@@ -6,8 +6,11 @@ import { scannerSessionsService } from '@/services/scannerSessions';
 import crypto from 'crypto';
 import { encryptSecret } from '@/utils/encryption';
 
-async function resolveOrCreateVolunteerAuthUser(adminClient: any, email: string) {
+async function resolveOrCreateVolunteerAuthUser(adminClient: any, email: string, eventId: string) {
   const cleanEmail = email.trim().toLowerCase();
+  const maskedEmail = cleanEmail.substring(0, 3) + '***@' + cleanEmail.split('@')[1];
+  
+  console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_AUTH_CREATE_START for ${maskedEmail}`);
 
   // Try to create the user directly
   const { data: newAuthUser, error: createUserError } = await adminClient.auth.admin.createUser({
@@ -17,12 +20,14 @@ async function resolveOrCreateVolunteerAuthUser(adminClient: any, email: string)
   });
 
   if (createUserError) {
-    // Treat Supabase's user-already-exists condition as the duplicate case.
+    const errMessage = createUserError.message || '';
     const isDuplicate = createUserError.status === 422 ||
                         createUserError.code === 'user_already_exists' ||
-                        createUserError.message.toLowerCase().includes('already');
+                        createUserError.code === 'email_exists' ||
+                        errMessage.toLowerCase().includes('already');
 
     if (isDuplicate) {
+      console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_AUTH_DUPLICATE_DETECTED error code: ${createUserError.code}, status: ${createUserError.status}`);
       let existingUser = null;
       let page = 1;
       const perPage = 1000;
@@ -36,7 +41,6 @@ async function resolveOrCreateVolunteerAuthUser(adminClient: any, email: string)
           throw new Error(`Failed to list users during duplicate resolution: ${listError.message}`);
         }
 
-        // If the page is empty, we've reached the end
         if (!usersData || !usersData.users || usersData.users.length === 0) {
           break;
         }
@@ -47,7 +51,6 @@ async function resolveOrCreateVolunteerAuthUser(adminClient: any, email: string)
           break;
         }
 
-        // If the returned page contains fewer users than the requested page size, treat it as the final page.
         if (usersData.users.length < perPage) {
           break;
         }
@@ -59,21 +62,26 @@ async function resolveOrCreateVolunteerAuthUser(adminClient: any, email: string)
         throw new Error('User was reported as already registered, but could not be found after exhausting pagination lookup.');
       }
 
-      return { user: existingUser, created: false };
+      console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_AUTH_EXISTING_USER_FOUND`);
+      return { user: existingUser, created: false, maskedEmail };
     }
 
-    throw new Error('Failed to create volunteer account: ' + createUserError.message);
+    throw new Error('Failed to create volunteer account: ' + errMessage);
   }
 
-  return { user: newAuthUser.user, created: true };
+  return { user: newAuthUser.user, created: true, maskedEmail };
 }
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ eventId: string }> }
 ) {
+  let globalMaskedEmail = 'unknown';
+  let globalEventId = 'unknown';
+
   try {
     const { eventId } = await params;
+    globalEventId = eventId;
     const body = await request.json();
     const { email, zoneIds, startsAt, endsAt } = body;
 
@@ -114,7 +122,8 @@ export async function POST(
 
     // 4. Resolve Auth User
     const adminClient = createAdminClient();
-    const { user: targetUser, created: isNewUser } = await resolveOrCreateVolunteerAuthUser(adminClient, email);
+    const { user: targetUser, created: isNewUser, maskedEmail } = await resolveOrCreateVolunteerAuthUser(adminClient, email, eventId);
+    globalMaskedEmail = maskedEmail;
     const targetUserId = targetUser.id;
 
     // 5. Handle Profile
@@ -131,6 +140,8 @@ export async function POST(
       }, { onConflict: 'id' });
       recipientName = 'Volunteer';
     }
+
+    console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_PROFILE_RESOLVED for ${maskedEmail}`);
 
     // Determine the role to assign (use 'member' by default)
     const { data: roleData } = await supabase.from('roles').select('id').eq('name', 'member').single();
@@ -163,8 +174,9 @@ export async function POST(
       });
     }
 
+    console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_ASSIGNMENT_START for ${maskedEmail}`);
+
     // 6. Handle Idempotent Assignments
-    // Load existing active assignments
     const { data: existingAssignments } = await supabase
       .from('event_staff_assignments')
       .select('access_zone_id')
@@ -175,8 +187,9 @@ export async function POST(
     const existingZoneIds = new Set(existingAssignments?.map(a => a.access_zone_id) || []);
     const newZoneIds = zoneIds.filter((zId: string) => !existingZoneIds.has(zId));
 
-    // If completely idempotent request (no new zones)
     if (newZoneIds.length === 0) {
+      console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_ASSIGNMENT_SUCCESS (idempotent duplicate request) for ${maskedEmail}`);
+      console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_SUCCESS for ${maskedEmail}`);
       return NextResponse.json({ 
         success: true, 
         existingUser: !isNewUser, 
@@ -201,18 +214,23 @@ export async function POST(
       .upsert(assignmentsToInsert, { onConflict: 'event_id,user_id,access_zone_id' })
       .select('id');
 
-    if (assignError) throw assignError;
+    if (assignError) {
+      throw new Error('Failed to assign volunteer to zones: ' + assignError.message);
+    }
+    
+    console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_ASSIGNMENT_SUCCESS (new zones inserted) for ${maskedEmail}`);
+    console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_SCANNER_START for ${maskedEmail}`);
 
-    // Set expiry to 7 days or event end, depending on logic. Let's use 7 days safety margin.
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + 7);
 
     // 7. Scanner session
     const { rawToken } = await scannerSessionsService.createOrRotateScannerSession(eventId, targetUserId, expiryDate);
 
+    console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_EMAIL_JOB_START for ${maskedEmail}`);
+
     // 8. Queue Email Job (only for new assignments)
     const assignmentId = assignedData && assignedData.length > 0 ? assignedData[0].id : targetUserId;
-    // Create a highly specific idempotency key to prevent duplicate emails for the same batch of assignments
     const idempotencyKey = `${eventId}:${assignmentId}:${Date.now()}:volunteer_access_assigned`;
 
     const payload = {
@@ -222,7 +240,7 @@ export async function POST(
       recipient_name: recipientName,
       event_name: eventName,
       event_date: eventData ? `${eventData.start_date}T${eventData.start_time}` : null,
-      assigned_zones: assignedZones, // Note: For future improvements, this might only pass new zones
+      assigned_zones: assignedZones,
       starts_at: startDateTime,
       ends_at: endDateTime,
       type: 'volunteer_access_assigned',
@@ -240,11 +258,14 @@ export async function POST(
       next_attempt_at: new Date().toISOString()
     }, { onConflict: 'idempotency_key' });
 
-    if (jobErr) console.error('Failed to create integration job:', jobErr);
+    if (jobErr) {
+      throw new Error('Failed to create integration email job: ' + jobErr.message);
+    }
 
     // Trigger background processor to pick up the newly created jobs immediately
     await integrationsService.triggerJobProcessor();
 
+    console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_SUCCESS for ${maskedEmail}`);
     return NextResponse.json({ 
       success: true, 
       existingUser: !isNewUser,
@@ -252,8 +273,8 @@ export async function POST(
       message: 'Volunteer assigned successfully' 
     });
   } catch (error: any) {
-    console.error('Error in invite API:', error);
+    console.error(`[DIAGNOSTIC] [${globalEventId}] ERROR for ${globalMaskedEmail}:`, error.message || error);
+    // Return actual operation error, not a generic "Failed to create account" wrapper for all stages
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
-
