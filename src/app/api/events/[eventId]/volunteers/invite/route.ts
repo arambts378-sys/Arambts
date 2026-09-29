@@ -6,62 +6,87 @@ import { scannerSessionsService } from '@/services/scannerSessions';
 import crypto from 'crypto';
 import { encryptSecret } from '@/utils/encryption';
 
-async function resolveOrCreateVolunteerAuthUser(adminClient: any, email: string, eventId: string) {
+async function resolveOrCreateVolunteerAuthUser(adminClient: any, email: string) {
   const cleanEmail = email.trim().toLowerCase();
-  const maskedEmail = cleanEmail.substring(0, 3) + '***@' + cleanEmail.split('@')[1];
   
-  console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_AUTH_CREATE_START for ${maskedEmail}`);
+  console.log(`[VOLUNTEER] AUTH_LOOKUP_START`);
 
-  // Try to create the user directly
+  // 1. Search for existing user BEFORE attempting to create
+  let existingUser = null;
+  let page = 1;
+  const perPage = 1000;
+  const MAX_PAGES = 100;
+
+  while (page <= MAX_PAGES) {
+    const { data: usersData, error: listError } = await adminClient.auth.admin.listUsers({ page, perPage });
+    
+    if (listError) {
+      throw new Error(`Failed to list users during auth lookup: ${listError.message}`);
+    }
+
+    if (!usersData || !usersData.users || usersData.users.length === 0) {
+      break;
+    }
+
+    const found = usersData.users.find((u: any) => u.email?.toLowerCase() === cleanEmail);
+    if (found) {
+      existingUser = found;
+      break;
+    }
+
+    if (usersData.users.length < perPage) {
+      break;
+    }
+
+    page++;
+  }
+
+  // 2. Return if user already exists
+  if (existingUser) {
+    console.log(`[VOLUNTEER] AUTH_EXISTING_USER_FOUND`);
+    return { user: existingUser, created: false };
+  }
+
+  // 3. Attempt to create the user if not found
+  console.log(`[VOLUNTEER] AUTH_CREATE_START`);
   const { data: newAuthUser, error: createUserError } = await adminClient.auth.admin.createUser({
     email: cleanEmail,
     email_confirm: true,
     user_metadata: { source: 'volunteer_scanner_invite' }
   });
 
+  // 4. Handle creation failure
   if (createUserError) {
-    // Supabase Auth error structures and messages for duplicate users can vary wildly between environments and GoTrue versions.
-    // Instead of relying on brittle string matching or error codes, we unconditionally perform a reliable paginated lookup.
-    // If the user is found, we treat it as an existing user. If not, we throw the original error.
-    let existingUser = null;
-    let page = 1;
-    const perPage = 1000;
-    const MAX_PAGES = 100;
+    // Check if the failure was due to a race condition (user created exactly between lookup and now)
+    const errMessage = String(createUserError.message || createUserError);
+    
+    // We do one final fallback lookup without relying on specific error codes
+    let raceExistingUser = null;
+    let racePage = 1;
+    
+    while (racePage <= MAX_PAGES) {
+      const { data: raceUsersData, error: raceListError } = await adminClient.auth.admin.listUsers({ page: racePage, perPage });
+      if (raceListError) break;
+      if (!raceUsersData || !raceUsersData.users || raceUsersData.users.length === 0) break;
 
-    while (page <= MAX_PAGES) {
-      const { data: usersData, error: listError } = await adminClient.auth.admin.listUsers({ page, perPage });
-      
-      if (listError) {
-        throw new Error(`Failed to list users during duplicate resolution: ${listError.message}`);
-      }
-
-      if (!usersData || !usersData.users || usersData.users.length === 0) {
+      const raceFound = raceUsersData.users.find((u: any) => u.email?.toLowerCase() === cleanEmail);
+      if (raceFound) {
+        raceExistingUser = raceFound;
         break;
       }
-
-      const found = usersData.users.find((u: any) => u.email?.toLowerCase() === cleanEmail);
-      if (found) {
-        existingUser = found;
-        break;
-      }
-
-      if (usersData.users.length < perPage) {
-        break;
-      }
-
-      page++;
+      if (raceUsersData.users.length < perPage) break;
+      racePage++;
     }
 
-    if (existingUser) {
-      return { user: existingUser, created: false };
+    if (raceExistingUser) {
+      console.log(`[VOLUNTEER] AUTH_EXISTING_USER_FOUND (via race condition fallback)`);
+      return { user: raceExistingUser, created: false };
     }
 
-    // If the user does not exist, the error was NOT a duplicate-user error (e.g., rate limit, invalid format).
-    // In this case, we throw the original error.
-    const errMessage = createUserError.message || String(createUserError);
     throw new Error('Failed to create volunteer account: ' + errMessage);
   }
 
+  console.log(`[VOLUNTEER] AUTH_CREATED`);
   return { user: newAuthUser.user, created: true };
 }
 
@@ -69,7 +94,6 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ eventId: string }> }
 ) {
-  let globalMaskedEmail = 'unknown';
   let globalEventId = 'unknown';
 
   try {
@@ -115,8 +139,7 @@ export async function POST(
 
     // 4. Resolve Auth User
     const adminClient = createAdminClient();
-    const { user: targetUser, created: isNewUser, maskedEmail } = await resolveOrCreateVolunteerAuthUser(adminClient, email, eventId);
-    globalMaskedEmail = maskedEmail;
+    const { user: targetUser, created: isNewUser } = await resolveOrCreateVolunteerAuthUser(adminClient, email);
     const targetUserId = targetUser.id;
 
     // 5. Handle Profile
@@ -134,7 +157,7 @@ export async function POST(
       recipientName = 'Volunteer';
     }
 
-    console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_PROFILE_RESOLVED for ${maskedEmail}`);
+    console.log(`[VOLUNTEER] PROFILE_RESOLVED`);
 
     // Determine the role to assign (use 'member' by default)
     const { data: roleData } = await supabase.from('roles').select('id').eq('name', 'member').single();
@@ -167,8 +190,6 @@ export async function POST(
       });
     }
 
-    console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_ASSIGNMENT_START for ${maskedEmail}`);
-
     // 6. Handle Idempotent Assignments
     const { data: existingAssignments } = await supabase
       .from('event_staff_assignments')
@@ -181,8 +202,8 @@ export async function POST(
     const newZoneIds = zoneIds.filter((zId: string) => !existingZoneIds.has(zId));
 
     if (newZoneIds.length === 0) {
-      console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_ASSIGNMENT_SUCCESS (idempotent duplicate request) for ${maskedEmail}`);
-      console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_SUCCESS for ${maskedEmail}`);
+      console.log(`[VOLUNTEER] ASSIGNMENT_SUCCESS`);
+      console.log(`[VOLUNTEER] INVITE_SUCCESS`);
       return NextResponse.json({ 
         success: true, 
         existingUser: !isNewUser, 
@@ -211,16 +232,15 @@ export async function POST(
       throw new Error('Failed to assign volunteer to zones: ' + assignError.message);
     }
     
-    console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_ASSIGNMENT_SUCCESS (new zones inserted) for ${maskedEmail}`);
-    console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_SCANNER_START for ${maskedEmail}`);
+    console.log(`[VOLUNTEER] ASSIGNMENT_SUCCESS`);
 
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + 7);
 
     // 7. Scanner session
     const { rawToken } = await scannerSessionsService.createOrRotateScannerSession(eventId, targetUserId, expiryDate);
-
-    console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_EMAIL_JOB_START for ${maskedEmail}`);
+    
+    console.log(`[VOLUNTEER] SCANNER_SUCCESS`);
 
     // 8. Queue Email Job (only for new assignments)
     const assignmentId = assignedData && assignedData.length > 0 ? assignedData[0].id : targetUserId;
@@ -254,11 +274,13 @@ export async function POST(
     if (jobErr) {
       throw new Error('Failed to create integration email job: ' + jobErr.message);
     }
+    
+    console.log(`[VOLUNTEER] EMAIL_JOB_SUCCESS`);
 
     // Trigger background processor to pick up the newly created jobs immediately
     await integrationsService.triggerJobProcessor();
 
-    console.log(`[DIAGNOSTIC] [${eventId}] VOLUNTEER_SUCCESS for ${maskedEmail}`);
+    console.log(`[VOLUNTEER] INVITE_SUCCESS`);
     return NextResponse.json({ 
       success: true, 
       existingUser: !isNewUser,
@@ -266,7 +288,7 @@ export async function POST(
       message: 'Volunteer assigned successfully' 
     });
   } catch (error: any) {
-    console.error(`[DIAGNOSTIC] [${globalEventId}] ERROR for ${globalMaskedEmail}:`, error.message || error);
+    console.error(`[VOLUNTEER] ERROR for event ${globalEventId}:`, error.message || error);
     // Return actual operation error, not a generic "Failed to create account" wrapper for all stages
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
