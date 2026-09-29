@@ -55,22 +55,43 @@ export async function POST(
     let targetUserId = null;
     let recipientName = null;
 
-    let existingUser = null;
-    let page = 1;
     const cleanEmail = email.trim().toLowerCase();
     
-    while (true) {
-      const { data: usersData } = await adminClient.auth.admin.listUsers({ page, perPage: 1000 });
-      if (!usersData || !usersData.users || usersData.users.length === 0) break;
-      
-      const found = usersData.users.find((u: any) => u.email?.toLowerCase() === cleanEmail);
-      if (found) {
-        existingUser = found;
-        break;
+    // Attempt to create the user first
+    const { data: newAuthUser, error: createUserError } = await adminClient.auth.admin.createUser({
+      email: cleanEmail,
+      email_confirm: true,
+      user_metadata: { source: 'volunteer_scanner_invite' }
+    });
+
+    if (createUserError) {
+      // If user exists, securely fetch their ID using generateLink (which works for existing users)
+      if (createUserError.message.includes('already been registered')) {
+        const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+          type: 'magiclink',
+          email: cleanEmail
+        });
+        
+        if (linkError || !linkData?.user) {
+          throw new Error('Failed to resolve existing user: ' + (linkError?.message || 'Unknown error'));
+        }
+        
+        targetUserId = linkData.user.id;
+        
+        const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', targetUserId).single();
+        recipientName = profile?.full_name || null;
+      } else {
+        throw new Error('Failed to create volunteer account: ' + createUserError.message);
       }
+    } else {
+      // New user created successfully
+      targetUserId = newAuthUser.user.id;
       
-      if (usersData.users.length < 1000) break;
-      page++;
+      // Upsert profile
+      await adminClient.from('profiles').upsert({
+        id: targetUserId,
+        full_name: 'Volunteer'
+      }, { onConflict: 'id' });
     }
 
     // Determine the role to assign (use 'member' by default)
@@ -87,28 +108,6 @@ export async function POST(
 
     const startDateTime = startsAt ? new Date(new Date().toDateString() + ' ' + startsAt).toISOString() : null;
     const endDateTime = endsAt ? new Date(new Date().toDateString() + ' ' + endsAt).toISOString() : null;
-
-    if (existingUser) {
-      targetUserId = existingUser.id;
-      const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', targetUserId).single();
-      recipientName = profile?.full_name || null;
-    } else {
-      // User does NOT exist in auth.users -> create a minimal account for them
-      const { data: newAuthUser, error: createUserError } = await adminClient.auth.admin.createUser({
-        email: cleanEmail,
-        email_confirm: true,
-        user_metadata: { source: 'volunteer_scanner_invite' }
-      });
-      if (createUserError) throw new Error('Failed to create volunteer account: ' + createUserError.message);
-      
-      targetUserId = newAuthUser.user.id;
-      
-      // Upsert profile without 'email' as it doesn't exist in the schema
-      await adminClient.from('profiles').upsert({
-        id: targetUserId,
-        full_name: 'Volunteer'
-      }, { onConflict: 'id' });
-    }
 
     // Ensure workspace membership
     const { data: existingMember } = await supabase
