@@ -26,9 +26,10 @@ async function resolveOrCreateVolunteerAuthUser(adminClient: any, email: string)
       let existingUser = null;
       let page = 1;
       const perPage = 1000;
+      const MAX_PAGES = 100;
 
       // Robustly paginate through users until found or exhausted
-      while (true) {
+      while (page <= MAX_PAGES) {
         const { data: usersData, error: listError } = await adminClient.auth.admin.listUsers({ page, perPage });
         
         if (listError) {
@@ -46,11 +47,16 @@ async function resolveOrCreateVolunteerAuthUser(adminClient: any, email: string)
           break;
         }
 
+        // If the returned page contains fewer users than the requested page size, treat it as the final page.
+        if (usersData.users.length < perPage) {
+          break;
+        }
+
         page++;
       }
 
       if (!existingUser) {
-        throw new Error('User was reported as already registered, but could not be found via lookup.');
+        throw new Error('User was reported as already registered, but could not be found after exhausting pagination lookup.');
       }
 
       return { user: existingUser, created: false };
