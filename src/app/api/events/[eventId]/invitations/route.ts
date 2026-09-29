@@ -60,15 +60,15 @@ export async function POST(
       }, { status: 400 });
     }
 
-    // Get Member Role
+    // Get Viewer Role
     const { data: role } = await supabase
       .from('roles')
       .select('id')
-      .eq('name', 'member')
+      .eq('name', 'viewer')
       .single();
 
     if (!role) {
-      return NextResponse.json({ error: 'Member role not configured in the system.' }, { status: 500 });
+      return NextResponse.json({ error: 'Viewer role not configured in the system.' }, { status: 500 });
     }
 
     // Create Invitation
