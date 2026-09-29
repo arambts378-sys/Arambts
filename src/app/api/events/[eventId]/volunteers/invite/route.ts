@@ -55,8 +55,21 @@ export async function POST(
     let targetUserId = null;
     let recipientName = null;
 
-    const { data: usersData } = await adminClient.auth.admin.listUsers();
-    const existingUser = usersData?.users.find((u: any) => u.email === email);
+    let existingUser = null;
+    let page = 1;
+    while (true) {
+      const { data: usersData } = await adminClient.auth.admin.listUsers({ page, perPage: 1000 });
+      if (!usersData || !usersData.users || usersData.users.length === 0) break;
+      
+      const found = usersData.users.find((u: any) => u.email === email);
+      if (found) {
+        existingUser = found;
+        break;
+      }
+      
+      if (usersData.users.length < 1000) break;
+      page++;
+    }
 
     // Determine the role to assign (use 'member' by default)
     const { data: roleData } = await supabase.from('roles').select('id').eq('name', 'member').single();
