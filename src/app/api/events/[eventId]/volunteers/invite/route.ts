@@ -50,13 +50,13 @@ export async function POST(
       return NextResponse.json({ error: 'You do not have permission to manage volunteers.' }, { status: 403 });
     }
 
-    // 3. Resolve email server-side
-    // Search in profiles
-    const { data: targetProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('id, first_name, last_name')
-      .eq('email', email)
-      .single();
+    // 3. Resolve email server-side using admin client since profiles doesn't store email
+    const adminClient = createAdminClient();
+    let targetUserId = null;
+    let recipientName = null;
+
+    const { data: usersData } = await adminClient.auth.admin.listUsers();
+    const existingUser = usersData?.users.find((u: any) => u.email === email);
 
     // Determine the role to assign (use 'member' by default)
     const { data: roleData } = await supabase.from('roles').select('id').eq('name', 'member').single();
@@ -73,12 +73,12 @@ export async function POST(
     const startDateTime = startsAt ? new Date(new Date().toDateString() + ' ' + startsAt).toISOString() : null;
     const endDateTime = endsAt ? new Date(new Date().toDateString() + ' ' + endsAt).toISOString() : null;
 
-    let targetUserId = targetProfile?.id;
-    let recipientName = targetProfile?.first_name ? `${targetProfile.first_name} ${targetProfile.last_name || ''}`.trim() : null;
-
-    if (!targetProfile) {
-      // User does NOT exist in ARAM BTS -> create a minimal account for them
-      const adminClient = createAdminClient();
+    if (existingUser) {
+      targetUserId = existingUser.id;
+      const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', targetUserId).single();
+      recipientName = profile?.full_name || null;
+    } else {
+      // User does NOT exist in auth.users -> create a minimal account for them
       const { data: newAuthUser, error: createUserError } = await adminClient.auth.admin.createUser({
         email,
         email_confirm: true,
@@ -88,10 +88,10 @@ export async function POST(
       
       targetUserId = newAuthUser.user.id;
       
-      // Upsert profile in case the trigger is slow or doesn't exist
+      // Upsert profile without 'email' as it doesn't exist in the schema
       await adminClient.from('profiles').upsert({
         id: targetUserId,
-        email: email
+        full_name: 'Volunteer'
       }, { onConflict: 'id' });
     }
 
