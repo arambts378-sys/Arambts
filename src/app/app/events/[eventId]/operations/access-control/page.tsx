@@ -241,15 +241,19 @@ export default function AccessControlPage() {
     }
   };
 
-  const handleDeactivateAssignment = async (assignmentId: string) => {
+  const handleDeleteAssignment = async (assignmentId: string) => {
+    if (!window.confirm('Are you sure you want to remove this volunteer access?')) return;
+    
     const supabase = createClient();
     const { error } = await supabase
       .from('event_staff_assignments')
-      .update({ active: false })
+      .delete()
       .eq('id', assignmentId);
     
     if (!error) {
-      setAssignments(assignments.map(a => a.id === assignmentId ? { ...a, active: false } : a));
+      setAssignments(assignments.filter(a => a.id !== assignmentId));
+    } else {
+      alert("Error deleting assignment: " + error.message);
     }
   };
 
@@ -489,11 +493,9 @@ export default function AccessControlPage() {
                           <td className="px-6 py-4 flex items-center gap-3">
                             <button className="text-primary hover:underline text-sm font-bold">Edit</button>
                             <button onClick={() => handleResendEmail('assignment', a.id, a.profiles?.id ? volunteerEmails[a.profiles.id] : '')} className="text-primary hover:underline text-sm font-bold">Resend Email</button>
-                            {a.active && (
-                              <button onClick={() => handleDeactivateAssignment(a.id)} className="text-error hover:underline text-sm font-bold">
-                                Deactivate
-                              </button>
-                            )}
+                            <button onClick={() => handleDeleteAssignment(a.id)} className="text-error hover:underline text-sm font-bold">
+                              Delete
+                            </button>
                           </td>
                         </tr>
                       );
