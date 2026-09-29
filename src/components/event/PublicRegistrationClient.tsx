@@ -7,6 +7,8 @@ import { EventRegistrationSettings } from '@/types';
 import Link from 'next/link';
 import { TicketTemplate } from '../ticket/TicketTemplate';
 
+import { submitRegistrationServerAction } from '@/app/actions/registrationActions';
+
 interface Props {
   event: any;
   settings: EventRegistrationSettings | null;
@@ -36,7 +38,7 @@ export default function PublicRegistrationClient({ event, settings, slug, walkat
     emergency_contact_phone: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successData, setSuccessData] = useState<{ registration_number: string } | null>(null);
+  const [successData, setSuccessData] = useState<{ registration_number: string, emailDeliveryFailed?: boolean } | null>(null);
 
 
 
@@ -65,8 +67,11 @@ export default function PublicRegistrationClient({ event, settings, slug, walkat
       const cleanData = { ...formData };
       if (!cleanData.distance_category_id) delete (cleanData as any).distance_category_id;
       
-      const result = await registrationsService.submitPublicRegistration(event.id, cleanData);
-      setSuccessData({ registration_number: result.registration_number });
+      const result = await submitRegistrationServerAction(event.id, cleanData);
+      setSuccessData({ 
+        registration_number: result.registration_number,
+        emailDeliveryFailed: result.emailDeliveryFailed
+      });
     } catch (err: any) {
       setFormError(err.message || "An error occurred during registration. Please try again.");
     } finally {
@@ -127,8 +132,14 @@ export default function PublicRegistrationClient({ event, settings, slug, walkat
           </div>
 
           {settings?.confirmation_message && (
-            <div className="mb-8 p-4 bg-primary-container/30 text-on-primary-container rounded-xl text-body-md border border-primary/20 text-center">
+            <div className="mb-8 p-4 bg-primary-container/30 text-on-primary-container rounded-xl text-body-md border border-primary/20 text-center print:hidden">
               {settings.confirmation_message}
+            </div>
+          )}
+
+          {successData.emailDeliveryFailed && (
+            <div className="mb-8 p-4 bg-error-container/20 text-on-error-container rounded-xl text-body-md border border-error/20 text-center print:hidden">
+              Registration successful. Your ticket is available below, but we encountered an issue sending the confirmation email. Please download or print your ticket here.
             </div>
           )}
 
@@ -136,7 +147,7 @@ export default function PublicRegistrationClient({ event, settings, slug, walkat
             <TicketTemplate data={ticketData} />
           </div>
 
-          <div className="text-center">
+          <div className="text-center print:hidden">
             <Link href={`/events/${slug}`} className="text-primary font-bold hover:underline inline-flex items-center gap-1">
               <span className="material-symbols-outlined text-[20px]">arrow_back</span>
               Return to Event Website

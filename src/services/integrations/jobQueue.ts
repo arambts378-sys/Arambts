@@ -18,6 +18,21 @@ export const jobQueue = {
     return data || [];
   },
 
+  claimJobsForRegistration: async (registrationId: string, processorId: string) => {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase.rpc('claim_integration_jobs_for_registration', {
+      p_registration_id: registrationId,
+      p_processor_id: processorId
+    });
+
+    if (error) {
+      console.error('Error claiming jobs for registration:', error);
+      return [];
+    }
+
+    return data || [];
+  },
+
   updateJobStatus: async (jobId: string, updates: any) => {
     const supabase = createAdminClient();
     const { error } = await supabase

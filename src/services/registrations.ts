@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
 import { Registration, EventRegistrationSettings } from '@/types';
-import { integrationsService } from '@/services/integrations';
 
 export const registrationsService = {
   /**
@@ -119,9 +118,6 @@ export const registrationsService = {
     if (error) {
       throw new Error(error.message || 'Registration failed');
     }
-
-    // Trigger Integrations processor in the background (fire and forget)
-    integrationsService.triggerJobProcessor().catch(console.error);
 
     return data as { success: boolean; registration_id: string; registration_number: string };
   }
