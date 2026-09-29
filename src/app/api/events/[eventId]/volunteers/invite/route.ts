@@ -141,7 +141,6 @@ export async function POST(
     const assignmentId = assignedData && assignedData.length > 0 ? assignedData[0].id : targetUserId;
     const idempotencyKey = `${eventId}:${assignmentId}:volunteer_access_assigned`;
 
-    const adminClient = createAdminClient();
     
     const payload = {
       event_id: eventId,
