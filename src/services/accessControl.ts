@@ -226,8 +226,8 @@ export const accessControlService = {
   async evaluateCheckInAccess(rawToken: string, zoneId: string, scannerToken: string | null = null) {
     const supabase = await createClient();
     
-    // Hash the attendee QR token
-    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    // Hash the attendee QR token (trim to ensure no scanner whitespace corrupts the hash)
+    const tokenHash = crypto.createHash('sha256').update(rawToken.trim()).digest('hex');
 
     // Hash the scanner session token if provided
     let scannerTokenHash = null;

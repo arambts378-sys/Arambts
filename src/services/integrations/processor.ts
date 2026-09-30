@@ -49,6 +49,8 @@ const processJobs = async (jobs: any[], processorId: string) => {
         
         if (job.event_type === 'qr_delivery') {
           await emailProvider.sendQrDelivery(job, event, integration.config);
+        } else if (job.event_type === 'certificate_delivery') {
+          await emailProvider.sendCertificateDelivery(job, event, integration.config);
         } else {
           await emailProvider.process(job, event, integration.config);
         }
