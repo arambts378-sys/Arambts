@@ -235,4 +235,63 @@ export const emailProvider = {
     return { success: true };
   },
 
+  sendScannerAccess: async (config: any, event: any, sessionData: any) => {
+    if (!config || !config.host) {
+      throw new Error('EMAIL_INTEGRATION_NOT_CONFIGURED');
+    }
+
+    let { host, port, user, pass, fromEmail, fromName, subject } = config;
+    try {
+      const { decryptSecret } = await import('@/utils/encryption');
+      pass = decryptSecret(pass);
+    } catch (e) {
+      throw new Error('EMAIL_INTEGRATION_NOT_CONFIGURED');
+    }
+
+    const { volunteerEmail, scannerLink, allowedZones, allowedDistances, expiresAt } = sessionData;
+
+    const transporter = nodemailer.createTransport({
+      host,
+      port: parseInt(port) || 587,
+      secure: parseInt(port) === 465,
+      auth: { user, pass }
+    });
+
+    const mailOptions = {
+      from: `"${fromName || event.name}" <${fromEmail || user}>`,
+      to: volunteerEmail,
+      subject: subject || `Scanner Access — ${event.name}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; background-color: #f3f4f6; padding: 20px 0;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+            
+            <div style="padding: 30px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+              <h1 style="color: #4F46E5; margin: 0 0 10px 0; font-size: 24px;">Event Scanner Access</h1>
+              <p style="margin: 0; color: #4b5563; font-size: 16px;">You have been granted scanner access for <strong>${event.name}</strong>.</p>
+            </div>
+
+            <div style="padding: 30px;">
+              <p style="margin: 0 0 15px 0; font-size: 16px;"><strong>Allowed Zones:</strong> ${allowedZones.join(', ')}</p>
+              <p style="margin: 0 0 15px 0; font-size: 16px;"><strong>Allowed Distances:</strong> ${allowedDistances.length > 0 ? allowedDistances.join(', ') : 'All Participants'}</p>
+              ${expiresAt ? `<p style="margin: 0 0 15px 0; font-size: 16px;"><strong>Expires:</strong> ${new Date(expiresAt).toLocaleString()}</p>` : ''}
+              
+              <div style="text-align: center; margin-top: 30px;">
+                <a href="${scannerLink}" style="display: inline-block; background-color: #4F46E5; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; font-size: 16px;">Open Scanner</a>
+              </div>
+            </div>
+
+            <div style="padding: 0 30px 30px 30px; text-align: center;">
+              <p style="margin-bottom: 20px; font-size: 14px; color: #ef4444; font-weight: bold;">SECURITY WARNING: Do not share this link with anyone. It provides direct scanning authorization without a password.</p>
+              <p style="margin: 0; font-size: 14px; color: #9ca3af;">Regards,<br>The ${event.name} Team</p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Email sent: %s", info.messageId);
+    return { success: true };
+  },
+
 };

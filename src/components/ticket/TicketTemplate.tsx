@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import QRCodeLib from 'qrcode';
-import { toPng } from 'html-to-image';
+import html2canvas from 'html2canvas';
 
 export interface TicketData {
   event: any;
@@ -63,12 +63,14 @@ export function TicketTemplate({ data, className = '' }: TicketTemplateProps) {
       // Ensure fonts are loaded before capturing
       await document.fonts.ready;
       
-      const dataUrl = await toPng(ticketRef.current, {
-        cacheBust: true,
-        pixelRatio: 2,
+      const canvas = await html2canvas(ticketRef.current, {
+        scale: 2,
+        useCORS: true,
         backgroundColor: "#ffffff",
-        skipFonts: false
+        logging: false
       });
+      
+      const dataUrl = canvas.toDataURL('image/png');
       
       if (!dataUrl || !dataUrl.startsWith('data:image/')) {
         throw new Error('Ticket image generation failed.');
@@ -98,53 +100,56 @@ export function TicketTemplate({ data, className = '' }: TicketTemplateProps) {
       {/* The Printable Ticket Card */}
       <div 
         ref={ticketRef}
-        className="w-full bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden shadow-sm relative flex flex-col print:block print:w-[400px] print:mx-auto print:border-2"
-        style={{ width: '400px' }} // Fixed width for consistent image capture
+        className="w-full border rounded-2xl overflow-hidden shadow-sm relative flex flex-col print:block print:w-[400px] print:mx-auto print:border-2"
+        style={{ width: '400px', backgroundColor: '#ffffff', borderColor: '#dac0c4', color: '#1c1c19' }}
       >
         {/* Ticket Header / Event Branding */}
-        <div className="bg-gradient-to-r from-primary to-primary-variant px-6 py-6 text-white flex flex-col items-center justify-center text-center relative overflow-hidden print:!bg-primary print:!text-white print:-webkit-print-color-adjust-exact">
+        <div 
+          className="px-6 py-6 flex flex-col items-center justify-center text-center relative overflow-hidden"
+          style={{ background: 'linear-gradient(to right, #5c0427, #802442)', color: '#ffffff' }}
+        >
           {/* Subtle background pattern for branding */}
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '16px 16px' }}></div>
           
-          <h4 className="text-sm font-bold tracking-widest text-white/80 uppercase mb-1 z-10">ARAM BTS</h4>
-          <h2 className="text-2xl font-black z-10 leading-tight">{event?.name || 'Event Ticket'}</h2>
+          <h4 className="text-sm font-bold tracking-widest uppercase mb-1 z-10" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>ARAM BTS</h4>
+          <h2 className="text-2xl font-black z-10 leading-tight" style={{ color: '#ffffff' }}>{event?.name || 'Event Ticket'}</h2>
         </div>
 
         {/* Ticket Body */}
         <div className="p-6 flex flex-col gap-5">
           {/* Attendee Info */}
-          <div className="flex flex-col gap-1 border-b border-outline-variant pb-4">
-            <span className="text-xs font-bold text-outline uppercase tracking-wider">Attendee</span>
-            <span className="text-lg font-bold text-on-surface leading-tight">{fullName}</span>
+          <div className="flex flex-col gap-1 border-b pb-4" style={{ borderColor: '#dac0c4' }}>
+            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#887275' }}>Attendee</span>
+            <span className="text-lg font-bold leading-tight" style={{ color: '#1c1c19' }}>{fullName}</span>
             {attendee.email && (
-              <span className="text-sm text-on-surface-variant">{attendee.email}</span>
+              <span className="text-sm" style={{ color: '#554245' }}>{attendee.email}</span>
             )}
           </div>
 
           {/* Event Details Grid */}
-          <div className="grid grid-cols-2 gap-4 border-b border-outline-variant pb-4">
+          <div className="grid grid-cols-2 gap-4 border-b pb-4" style={{ borderColor: '#dac0c4' }}>
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-bold text-outline uppercase tracking-wider">Date</span>
-              <span className="text-sm font-semibold text-on-surface">{eventDate}</span>
-              <span className="text-xs text-on-surface-variant">{eventTime}</span>
+              <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#887275' }}>Date</span>
+              <span className="text-sm font-semibold" style={{ color: '#1c1c19' }}>{eventDate}</span>
+              <span className="text-xs" style={{ color: '#554245' }}>{eventTime}</span>
             </div>
             
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-bold text-outline uppercase tracking-wider">Venue</span>
-              <span className="text-sm font-semibold text-on-surface">{venue}</span>
+              <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#887275' }}>Venue</span>
+              <span className="text-sm font-semibold" style={{ color: '#1c1c19' }}>{venue}</span>
             </div>
 
             {isWalkathon && distanceCategory && (
-              <div className="flex flex-col gap-1 col-span-2 bg-primary/5 p-3 rounded-xl border border-primary/20 print:bg-gray-100">
-                <span className="text-xs font-bold text-primary uppercase tracking-wider">Distance</span>
-                <span className="text-lg font-black text-on-surface">{distanceCategory.name}</span>
+              <div className="flex flex-col gap-1 col-span-2 p-3 rounded-xl border" style={{ backgroundColor: 'rgba(92, 4, 39, 0.05)', borderColor: 'rgba(92, 4, 39, 0.2)' }}>
+                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#5c0427' }}>Distance</span>
+                <span className="text-lg font-black" style={{ color: '#1c1c19' }}>{distanceCategory.name}</span>
               </div>
             )}
           </div>
 
           {/* QR Code Section */}
           <div className="flex flex-col items-center justify-center gap-3 pt-2">
-            <div className="p-3 bg-white border border-outline-variant rounded-xl shadow-sm">
+            <div className="p-3 border rounded-xl shadow-sm" style={{ backgroundColor: '#ffffff', borderColor: '#dac0c4' }}>
               {rawToken ? (
                 qrDataUrl ? (
                   <img src={qrDataUrl} width={140} height={140} alt="QR Code" onLoad={() => setQrLoaded(true)} />
@@ -154,22 +159,22 @@ export function TicketTemplate({ data, className = '' }: TicketTemplateProps) {
                   </div>
                 )
               ) : (
-                <div className="w-[140px] h-[140px] bg-surface-container flex items-center justify-center rounded-lg text-outline">
+                <div className="w-[140px] h-[140px] flex items-center justify-center rounded-lg" style={{ backgroundColor: '#f1ede8', color: '#887275' }}>
                   <span className="material-symbols-outlined text-4xl">qr_code_2</span>
                 </div>
               )}
             </div>
             <div className="text-center">
-              <span className="text-xs text-on-surface-variant">Registration #</span>
-              <p className="font-mono font-bold text-on-surface">{registrationNumber}</p>
+              <span className="text-xs" style={{ color: '#554245' }}>Registration #</span>
+              <p className="font-mono font-bold" style={{ color: '#1c1c19' }}>{registrationNumber}</p>
             </div>
           </div>
           
         </div>
         
         {/* Ticket Footer */}
-        <div className="bg-surface-container-low px-6 py-4 text-center border-t border-outline-variant mt-auto print:bg-gray-50">
-          <p className="text-xs font-semibold text-on-surface-variant flex items-center justify-center gap-1.5">
+        <div className="px-6 py-4 text-center border-t mt-auto" style={{ backgroundColor: '#f7f3ee', borderColor: '#dac0c4' }}>
+          <p className="text-xs font-semibold flex items-center justify-center gap-1.5" style={{ color: '#554245' }}>
             <span className="material-symbols-outlined text-[16px]">qr_code_scanner</span>
             Present this ticket at the event entrance
           </p>
@@ -177,7 +182,7 @@ export function TicketTemplate({ data, className = '' }: TicketTemplateProps) {
       </div>
 
       {downloadError && (
-        <div className="mt-4 p-3 bg-error-container/20 text-error rounded-lg text-sm text-center print:hidden">
+        <div className="mt-4 p-3 rounded-lg text-sm text-center print:hidden" style={{ backgroundColor: 'rgba(255, 218, 214, 0.2)', color: '#ba1a1a' }}>
           {downloadError}
         </div>
       )}
@@ -187,7 +192,8 @@ export function TicketTemplate({ data, className = '' }: TicketTemplateProps) {
         <button 
           onClick={handleDownload}
           disabled={isDownloading || !rawToken || !qrLoaded}
-          className="flex-1 py-3.5 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-70"
+          className="flex-1 py-3.5 font-bold rounded-xl hover:opacity-90 transition-opacity shadow-sm flex items-center justify-center gap-2 disabled:opacity-70"
+          style={{ backgroundColor: '#5c0427', color: '#ffffff' }}
         >
           {isDownloading ? (
             <>
@@ -205,7 +211,8 @@ export function TicketTemplate({ data, className = '' }: TicketTemplateProps) {
         <button 
           onClick={handlePrint}
           disabled={!rawToken || !qrLoaded}
-          className="flex-1 py-3.5 bg-surface-container-highest text-on-surface font-bold rounded-xl hover:bg-surface-variant transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-70"
+          className="flex-1 py-3.5 font-bold rounded-xl hover:opacity-90 transition-opacity shadow-sm flex items-center justify-center gap-2 disabled:opacity-70"
+          style={{ backgroundColor: '#e6e2dd', color: '#1c1c19' }}
         >
           <span className="material-symbols-outlined text-[20px]">print</span>
           Print / Save Ticket

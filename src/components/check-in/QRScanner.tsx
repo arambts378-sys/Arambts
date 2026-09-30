@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats, Html5QrcodeCameraScanConfig } from 'html5-qrcode';
 
 interface QRScannerProps {
@@ -8,6 +8,7 @@ interface QRScannerProps {
   accessZoneId: string;
   onScanResult: (result: ScanLog) => void;
   disabled?: boolean;
+  scannerToken?: string | null;
 }
 
 export type ScanResultState = 'idle' | 'starting' | 'ready' | 'validating' | 'allowed' | 'denied' | 'camera_error' | 'network_error';
@@ -20,9 +21,17 @@ export interface ScanLog {
   message: string;
 }
 
-export default function QRScanner({ eventId, accessZoneId, onScanResult, disabled }: QRScannerProps) {
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+// Module-level lock for Strict Mode mount/unmount sequencing
+let globalScannerCleanupPromise: Promise<void> | null = null;
+
+export default function QRScanner({ eventId, accessZoneId, onScanResult, disabled, scannerToken }: QRScannerProps) {
   const containerId = "qr-reader";
+  
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const isStartingRef = useRef(false);
+  const isRunningRef = useRef(false);
+  const isStoppingRef = useRef(false);
+  const activeStartPromiseRef = useRef<Promise<void> | null>(null);
 
   const [status, setStatus] = useState<ScanResultState>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -32,24 +41,82 @@ export default function QRScanner({ eventId, accessZoneId, onScanResult, disable
 
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const startScanner = async (cameraId?: string) => {
+    const scanner = scannerRef.current;
+    if (!scanner) return;
+    
+    // 1. Prevent duplicate starts synchronously
+    if (isStartingRef.current || isStoppingRef.current) return;
+    isStartingRef.current = true;
+    
+    const doStart = async () => {
+      try {
+        setStatus('starting');
+
+        // Stop if currently running
+        if (isRunningRef.current || scanner.isScanning) {
+          try {
+            await scanner.stop();
+          } catch (e) {
+            console.warn("Failed to stop scanner before restart", e);
+          }
+          isRunningRef.current = false;
+        }
+
+        const config: Html5QrcodeCameraScanConfig = { fps: 10, qrbox: { width: 250, height: 250 } };
+        const targetCamera = cameraId ? cameraId : { facingMode: "environment" };
+
+        await scanner.start(
+          targetCamera,
+          config,
+          onScanSuccess,
+          undefined
+        );
+        
+        isRunningRef.current = true;
+        if (cameraId) setActiveCameraId(cameraId);
+        setStatus('ready');
+        setErrorMessage(null);
+        setCurrentResult(null);
+      } catch (err: any) {
+        console.error("Scanner start error:", err);
+        setStatus('camera_error');
+        setErrorMessage(err.message || 'Failed to start camera.');
+        isRunningRef.current = false;
+      } finally {
+        isStartingRef.current = false;
+      }
+    };
+
+    activeStartPromiseRef.current = doStart();
+    await activeStartPromiseRef.current;
+  };
+
   // Initialize Scanner and fetch cameras
   useEffect(() => {
     let isMounted = true;
     
-    const initCamera = async () => {
+    const init = async () => {
+      // Wait for any previous Strict Mode unmount to finish completely
+      while (globalScannerCleanupPromise) {
+        await globalScannerCleanupPromise;
+      }
+      if (!isMounted) return;
+
+      const scanner = new Html5Qrcode(containerId, { formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE], verbose: false });
+      scannerRef.current = scanner;
+
       try {
         setStatus('starting');
         const devices = await Html5Qrcode.getCameras();
-        if (isMounted) {
-          if (devices && devices.length > 0) {
-            setCameras(devices);
-            // Prefer back camera if available (usually index 1, or by facingMode)
-            // html5-qrcode doesn't expose facingMode directly here always, but we'll try 'environment' first
-            startScanner(devices[0].id); // default to first if no environment fallback 
-          } else {
-            setStatus('camera_error');
-            setErrorMessage('No cameras found on this device.');
-          }
+        if (!isMounted) return;
+
+        if (devices && devices.length > 0) {
+          setCameras(devices);
+          await startScanner(devices[0].id);
+        } else {
+          setStatus('camera_error');
+          setErrorMessage('No cameras found on this device.');
         }
       } catch (err: any) {
         if (isMounted) {
@@ -59,83 +126,91 @@ export default function QRScanner({ eventId, accessZoneId, onScanResult, disable
       }
     };
 
-    const scanner = new Html5Qrcode(containerId, { formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE], verbose: false });
-    scannerRef.current = scanner;
-
-    initCamera();
+    const mountPromise = init();
 
     return () => {
       isMounted = false;
-      if (scanner.isScanning) {
-        scanner.stop().catch(console.error);
-      }
-      scanner.clear();
+      isStoppingRef.current = true;
+      
+      let resolveCleanup: () => void;
+      globalScannerCleanupPromise = new Promise((resolve) => { resolveCleanup = resolve; });
+
+      const cleanup = async () => {
+        try {
+          // Wait for initialization to finish
+          await mountPromise;
+          
+          // Wait for any active start() to resolve
+          if (activeStartPromiseRef.current) {
+            await activeStartPromiseRef.current;
+          }
+
+          const scanner = scannerRef.current;
+          if (scanner) {
+            // MUST await stop() before clear()
+            if (isRunningRef.current || scanner.isScanning) {
+              try {
+                await scanner.stop();
+              } catch (e) {
+                console.warn("Error stopping scanner during cleanup", e);
+              }
+              isRunningRef.current = false;
+            }
+            try {
+              scanner.clear();
+            } catch (e) {
+              console.warn("Error clearing scanner during cleanup", e);
+            }
+          }
+        } catch (e) {
+          console.error("Cleanup sequence error:", e);
+        } finally {
+          scannerRef.current = null;
+          isStoppingRef.current = false;
+          
+          // Release lock for next mount
+          globalScannerCleanupPromise = null;
+          resolveCleanup();
+        }
+      };
+
+      cleanup();
     };
   }, []);
 
   // Handle disabled state changes
   useEffect(() => {
-    if (!scannerRef.current) return;
+    const scanner = scannerRef.current;
+    if (!scanner || isStoppingRef.current) return;
     
     if (disabled) {
-      if (scannerRef.current.getState() === 2) { // 2 = SCANNING
-        scannerRef.current.pause(); // pause is safer for quick toggles
+      if (scanner.getState() === 2) { // SCANNING
+        try { scanner.pause(); } catch(e) {}
       }
     } else {
-      if (scannerRef.current.getState() === 3) { // 3 = PAUSED
-        scannerRef.current.resume();
-      } else if (!scannerRef.current.isScanning && activeCameraId && status !== 'camera_error') {
+      if (scanner.getState() === 3) { // PAUSED
+        try { scanner.resume(); } catch(e) {}
+      } else if (!isRunningRef.current && !isStartingRef.current && activeCameraId && status !== 'camera_error' && status !== 'starting') {
         startScanner(activeCameraId);
       }
     }
   }, [disabled, activeCameraId, status]);
 
-  const startScanner = async (cameraId?: string) => {
-    if (!scannerRef.current) return;
-    try {
-      if (scannerRef.current.isScanning) {
-        await scannerRef.current.stop();
-      }
-      
-      const config: Html5QrcodeCameraScanConfig = { fps: 10, qrbox: { width: 250, height: 250 } };
-      
-      const targetCamera = cameraId 
-        ? cameraId 
-        : { facingMode: "environment" };
-
-      await scannerRef.current.start(
-        targetCamera,
-        config,
-        onScanSuccess,
-        undefined // ignore individual frame failures
-      );
-      
-      if (cameraId) setActiveCameraId(cameraId);
-      setStatus('ready');
-      setErrorMessage(null);
-      setCurrentResult(null);
-    } catch (err: any) {
-      console.error(err);
-      setStatus('camera_error');
-      setErrorMessage(err.message || 'Failed to start camera.');
-    }
-  };
-
   const onScanSuccess = async (decodedText: string) => {
-    if (isProcessing || disabled) return;
+    if (isProcessing || disabled || isStoppingRef.current) return;
     setIsProcessing(true);
     setStatus('validating');
 
-    // Pause camera scanning but keep preview
-    if (scannerRef.current && scannerRef.current.getState() === 2) { // 2 = SCANNING
-      scannerRef.current.pause();
+    const scanner = scannerRef.current;
+    if (scanner && scanner.getState() === 2) {
+      try { scanner.pause(); } catch(e) {}
     }
 
     try {
       const res = await fetch(`/api/events/${eventId}/check-in`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential: decodedText, accessZoneId })
+        body: JSON.stringify({ credential: decodedText, accessZoneId, scannerToken })
       });
 
       const data = await res.json();
@@ -151,7 +226,6 @@ export default function QRScanner({ eventId, accessZoneId, onScanResult, disable
         message: data.message || 'Check-in processed'
       });
 
-      // Pass result up
       onScanResult({
         id: Math.random().toString(36).substring(7),
         timestamp: new Date().toISOString(),
@@ -168,19 +242,19 @@ export default function QRScanner({ eventId, accessZoneId, onScanResult, disable
       });
     }
 
-    // Wait a short delay, then resume scanner
     setTimeout(() => {
+      if (isStoppingRef.current) return;
       setIsProcessing(false);
       setCurrentResult(null);
       setStatus('ready');
-      if (scannerRef.current && scannerRef.current.getState() === 3) { // 3 = PAUSED
-        scannerRef.current.resume();
+      if (scannerRef.current && scannerRef.current.getState() === 3) {
+        try { scannerRef.current.resume(); } catch(e) {}
       }
     }, 2500);
   };
 
   const switchCamera = () => {
-    if (cameras.length > 1) {
+    if (cameras.length > 1 && !isStartingRef.current && !isStoppingRef.current) {
       const currentIndex = cameras.findIndex(c => c.id === activeCameraId);
       const nextIndex = (currentIndex + 1) % cameras.length;
       startScanner(cameras[nextIndex].id);
@@ -271,3 +345,4 @@ export default function QRScanner({ eventId, accessZoneId, onScanResult, disable
     </div>
   );
 }
+

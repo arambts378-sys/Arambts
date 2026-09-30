@@ -38,7 +38,7 @@ export default function PublicRegistrationClient({ event, settings, slug, walkat
     emergency_contact_phone: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successData, setSuccessData] = useState<{ registration_number: string, emailDeliveryFailed?: boolean } | null>(null);
+  const [successData, setSuccessData] = useState<{ registration_number: string, emailDeliveryFailed?: boolean, qrToken?: string } | null>(null);
 
 
 
@@ -70,7 +70,8 @@ export default function PublicRegistrationClient({ event, settings, slug, walkat
       const result = await submitRegistrationServerAction(event.id, cleanData);
       setSuccessData({ 
         registration_number: result.registration_number,
-        emailDeliveryFailed: result.emailDeliveryFailed
+        emailDeliveryFailed: result.emailDeliveryFailed,
+        qrToken: result.qrToken
       });
     } catch (err: any) {
       setFormError(err.message || "An error occurred during registration. Please try again.");
@@ -110,7 +111,7 @@ export default function PublicRegistrationClient({ event, settings, slug, walkat
       registration: {
         registrationNumber: successData.registration_number,
       },
-      rawToken: successData.registration_number, // Using reg number as fallback visual QR until backend token sync if needed
+      rawToken: successData.qrToken, // Render the real QR credential token
       distanceCategory: selectedDistance
     };
 

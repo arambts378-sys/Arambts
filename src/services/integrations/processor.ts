@@ -42,35 +42,8 @@ const processJobs = async (jobs: any[], processorId: string) => {
       const integration = integrations.find(i => i.event_id === job.event_id && i.provider === job.provider);
       
       if (job.provider === 'qr' && job.event_type === 'qr_generation') {
-        // Internal QR Generation
-        // 1. Verify registration is still eligible
-        const { data: reg, error: regError } = await supabase
-          .from('registrations')
-          .select('status')
-          .eq('id', job.registration_id)
-          .single();
-
-        if (regError || !reg) throw new Error('Registration not found');
-        if (reg.status !== 'confirmed') throw new Error('Registration is not confirmed, skipping QR generation');
-
-        // 2. Generate securely via service
-        await qrCredentialsService.generateQrCredential(job.event_id, job.registration_id, true);
-
-        // 3. Queue Email Delivery if enabled
-        const emailIntegration = integrations.find(i => i.event_id === job.event_id && i.provider === 'email');
-        if (emailIntegration) {
-          const idempotencyKey = `${job.event_id}:${job.registration_id}:email:qr_delivery`;
-          await supabase.from('integration_jobs').insert({
-            event_id: job.event_id,
-            registration_id: job.registration_id,
-            provider: 'email',
-            event_type: 'qr_delivery',
-            payload: job.payload,
-            idempotency_key: idempotencyKey,
-            next_attempt_at: new Date().toISOString()
-          }).select('*').maybeSingle();
-        }
-
+        // Legacy qr_generation job. QR generation is now synchronous.
+        // We do nothing and let it be marked as success to clear it from the queue.
       } else if (job.provider === 'email') {
         if (!integration) throw new Error(`Configuration missing for email integration`);
         

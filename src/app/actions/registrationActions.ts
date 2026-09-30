@@ -2,6 +2,9 @@
 
 import { registrationsService } from '@/services/registrations';
 import { processRegistrationIntegrationJobs } from '@/services/integrations/processor';
+import { qrCredentialsService } from '@/services/qrCredentials';
+
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function submitRegistrationServerAction(
   eventId: string,
@@ -24,28 +27,74 @@ export async function submitRegistrationServerAction(
     // 1. Submit Registration (creates records + initial jobs in DB)
     const result = await registrationsService.submitPublicRegistration(eventId, personData);
 
-    // 2. Immediately process integration jobs for this specific registration
+    let qrToken = undefined;
+    let emailDeliveryFailed = false;
+
     if (result.success && result.registration_id) {
+      // 2. Synchronously Generate QR Credential
+      // This is a strict requirement for the frontend to render the ticket.
+      // We do not wrap this in a catch block because if it fails, the registration is technically incomplete 
+      // (the user can't check in), but wait, the user's registration IS in the database.
+      // If generateQrCredential fails because it already exists, it will throw. We should catch and try to get it.
+      let credential = await qrCredentialsService.getQrCredential(result.registration_id);
+      
+      if (!credential) {
+        const genResult = await qrCredentialsService.generateQrCredential(eventId, result.registration_id, true);
+        credential = genResult.credential;
+      }
+      
+      if (credential) {
+        qrToken = qrCredentialsService.recoverRawToken(credential.id);
+      }
+
+      // 3. Queue Email Delivery if enabled
       try {
-        // This processes qr_generation. If it succeeds, it queues qr_delivery.
-        // We will call it twice sequentially. The first pass processes qr_generation.
-        await processRegistrationIntegrationJobs(result.registration_id);
-        
-        // The second pass processes qr_delivery (since it was just inserted).
-        await processRegistrationIntegrationJobs(result.registration_id);
-      } catch (processorError) {
-        console.error("Targeted processor failed, but registration succeeded", processorError);
-        // We don't fail the registration if the processor throws, jobs stay pending/failed for Cron.
-        return {
-          ...result,
-          emailDeliveryFailed: true
-        };
+        const supabase = createAdminClient();
+        const { data: integrations } = await supabase
+          .from('event_integrations')
+          .select('provider')
+          .eq('event_id', eventId)
+          .eq('provider', 'email')
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (integrations) {
+          const payload = {
+            registrationId: result.registration_id,
+            registrationNumber: result.registration_number,
+            attendee: {
+              firstName: personData.first_name,
+              lastName: personData.last_name,
+              email: personData.email,
+              phone: personData.phone
+            }
+          };
+          
+          const idempotencyKey = `${eventId}:${result.registration_id}:email:qr_delivery`;
+          
+          await supabase.from('integration_jobs').insert({
+            event_id: eventId,
+            registration_id: result.registration_id,
+            provider: 'email',
+            event_type: 'qr_delivery',
+            payload: payload,
+            idempotency_key: idempotencyKey,
+            next_attempt_at: new Date().toISOString()
+          }).select('*').maybeSingle(); // This will safely fail on conflict (duplicate) due to idempotency_key
+
+          // Try to process immediately
+          await processRegistrationIntegrationJobs(result.registration_id);
+        }
+      } catch (emailErr) {
+        console.error("Email queuing/processing failed", emailErr);
+        emailDeliveryFailed = true;
       }
     }
 
     return {
       ...result,
-      emailDeliveryFailed: false
+      qrToken,
+      emailDeliveryFailed
     };
   } catch (error: any) {
     throw new Error(error.message || 'Registration failed');

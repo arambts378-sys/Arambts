@@ -8,7 +8,7 @@ export async function POST(
 ) {
   try {
     const { eventId } = await params;
-    const { credential, accessZoneId } = await request.json();
+    const { credential, accessZoneId, scannerToken } = await request.json();
 
     if (!credential || !accessZoneId) {
       return NextResponse.json(
@@ -20,7 +20,7 @@ export async function POST(
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!user && !scannerToken) {
       return NextResponse.json(
         { success: false, result: 'denied', reason: 'unauthorized', message: 'Unauthorized' },
         { status: 401 }
@@ -28,7 +28,7 @@ export async function POST(
     }
 
     // Call authoritative evaluateCheckInAccess service which wraps the postgres RPC
-    const checkInResult = await accessControlService.evaluateCheckInAccess(credential, accessZoneId);
+    const checkInResult = await accessControlService.evaluateCheckInAccess(credential, accessZoneId, scannerToken);
 
     // Ensure event isolation on API route level is safe: the RPC enforces event isolation internally.
     return NextResponse.json(checkInResult);

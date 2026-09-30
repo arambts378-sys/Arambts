@@ -1,23 +1,23 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function VolunteersPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
-  const router = useRouter();
-  const [volunteers, setVolunteers] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<any[]>([]);
   const [zones, setZones] = useState<any[]>([]);
+  const [distances, setDistances] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [email, setEmail] = useState('');
+  const [selectedZones, setSelectedZones] = useState<Set<string>>(new Set());
+  const [selectedDistances, setSelectedDistances] = useState<Set<string>>(new Set());
+  const [expiresAt, setExpiresAt] = useState('');
+  
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  
-  const [isNotMember, setIsNotMember] = useState(false);
-  const [invitationLink, setInvitationLink] = useState<string | null>(null);
-  const [inviting, setInviting] = useState(false);
+  const [creating, setCreating] = useState(false);
   
   useEffect(() => {
     fetchData();
@@ -26,19 +26,14 @@ export default function VolunteersPage({ params }: { params: Promise<{ eventId: 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [volRes, zoneRes] = await Promise.all([
-        fetch(`/api/events/${eventId}/volunteers`),
-        fetch(`/api/events/${eventId}/zones`)
-      ]);
+      const res = await fetch(`/api/events/${eventId}/scanner-sessions`);
       
-      if (!volRes.ok) throw new Error('Failed to fetch volunteers');
-      const volData = await volRes.json();
-      setVolunteers(volData);
+      if (!res.ok) throw new Error('Failed to fetch scanner sessions');
+      const data = await res.json();
       
-      if (zoneRes.ok) {
-        const zoneData = await zoneRes.json();
-        setZones(zoneData);
-      }
+      setSessions(data.sessions || []);
+      setZones(data.zones || []);
+      setDistances(data.distances || []);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -46,102 +41,82 @@ export default function VolunteersPage({ params }: { params: Promise<{ eventId: 
     }
   };
 
-  const handleAssign = async (e: React.FormEvent) => {
+  const handleCreateSession = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccessMsg(null);
-    setIsNotMember(false);
-    setInvitationLink(null);
+    setCreating(true);
 
     try {
-      const res = await fetch(`/api/events/${eventId}/volunteers`, {
+      if (selectedZones.size === 0) {
+        throw new Error('Please select at least one zone');
+      }
+
+      const res = await fetch(`/api/events/${eventId}/scanner-sessions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({
+          volunteerEmail: email,
+          zoneIds: Array.from(selectedZones),
+          distanceCategoryIds: Array.from(selectedDistances),
+          expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null
+        })
       });
       
       const data = await res.json();
       
       if (!res.ok) {
-        if (data.code === 'NOT_WORKSPACE_MEMBER') {
-          setIsNotMember(true);
-          return;
-        }
-        throw new Error(data.error || data.message || 'Failed to assign volunteer');
+        throw new Error(data.error || 'Failed to create scanner session');
       }
       
-      setSuccessMsg('Volunteer assigned to this event.');
+      setSuccessMsg('Scanner access created and email sent!');
       setEmail('');
+      setSelectedZones(new Set());
+      setSelectedDistances(new Set());
+      setExpiresAt('');
       fetchData();
-    } catch (err: any) {
-      setError(err.message);
-    }
-  };
-
-  const handleInviteToWorkspace = async () => {
-    setInviting(true);
-    setError(null);
-    setSuccessMsg(null);
-    try {
-      const res = await fetch(`/api/events/${eventId}/invitations`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || data.message || 'Failed to create workspace invitation');
-      }
-      
-      setSuccessMsg('Workspace invitation created.');
-      setInvitationLink(data.link);
-      setIsNotMember(false); // Hide the invite button since it's done
     } catch (err: any) {
       setError(err.message);
     } finally {
-      setInviting(false);
+      setCreating(false);
     }
   };
 
-  const handleRemoveVolunteer = async (userId: string) => {
-    if (!confirm('Are you sure you want to remove this volunteer from the event?')) return;
+  const handleRevoke = async (sessionId: string) => {
+    if (!confirm('Are you sure you want to revoke this scanner access?')) return;
     try {
-      const res = await fetch(`/api/events/${eventId}/volunteers/${userId}`, {
+      const res = await fetch(`/api/events/${eventId}/scanner-sessions/${sessionId}`, {
         method: 'DELETE'
       });
-      if (!res.ok) throw new Error('Failed to remove volunteer');
+      if (!res.ok) throw new Error('Failed to revoke access');
       fetchData();
     } catch (err: any) {
       setError(err.message);
     }
   };
 
-  const handleToggleZone = async (userId: string, zoneId: string, isAssigned: boolean) => {
-    try {
-      if (isAssigned) {
-        await fetch(`/api/events/${eventId}/volunteers/${userId}/zones/${zoneId}`, { method: 'DELETE' });
-      } else {
-        await fetch(`/api/events/${eventId}/volunteers/${userId}/zones`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ zoneId })
-        });
-      }
-      fetchData(); 
-    } catch (err: any) {
-      setError(err.message);
-    }
+  const toggleZone = (id: string) => {
+    const next = new Set(selectedZones);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedZones(next);
   };
 
-  if (loading) return <div className="p-8">Loading volunteers...</div>;
+  const toggleDistance = (id: string) => {
+    const next = new Set(selectedDistances);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedDistances(next);
+  };
+
+  if (loading) return <div className="p-8">Loading scanner configuration...</div>;
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Event Volunteers</h1>
-          <p className="text-on-surface-variant">Manage staff and their scanner zone assignments.</p>
+          <h1 className="text-2xl font-bold">Volunteer Scanner Access</h1>
+          <p className="text-on-surface-variant">Create and manage secure scanner links for volunteers. No login required.</p>
         </div>
         <Link 
           href={`/app/events/${eventId}/operations/access-control`}
@@ -158,129 +133,149 @@ export default function VolunteersPage({ params }: { params: Promise<{ eventId: 
         </div>
       )}
 
-      {successMsg && !invitationLink && (
+      {successMsg && (
         <div className="p-4 bg-green-100 text-green-800 rounded-xl">
           {successMsg}
         </div>
       )}
 
-      {/* SECTION A: Workspace Member Assignment */}
-      <div className="bg-surface-variant/30 p-6 rounded-2xl space-y-4 border border-outline-variant/30">
-        <div>
-          <h2 className="text-lg font-bold">Assign Workspace Member</h2>
-          <p className="text-sm text-on-surface-variant mb-4">Only workspace members can be assigned as event volunteers.</p>
-        </div>
+      {/* SECTION A: Create Scanner Access */}
+      <div className="bg-surface-variant/30 p-6 rounded-2xl border border-outline-variant/30">
+        <h2 className="text-lg font-bold mb-6">Create New Scanner Access</h2>
         
-        <form onSubmit={handleAssign} className="flex gap-4 items-end">
-          <div className="flex-1">
-            <label className="block text-sm font-medium mb-2">Email Address</label>
+        <form onSubmit={handleCreateSession} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium mb-2">Volunteer Email</label>
             <input 
               type="email" 
               required
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setIsNotMember(false);
-                setInvitationLink(null);
-                setSuccessMsg(null);
-                setError(null);
-              }}
-              placeholder="Enter member's email address"
-              className="w-full px-4 py-2 border rounded-xl"
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="volunteer@example.com"
+              className="w-full max-w-md px-4 py-2 border rounded-xl"
+            />
+            <p className="text-xs text-on-surface-variant mt-1">The secure scanner link will be sent here.</p>
+          </div>
+
+          {distances.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium mb-2">Participant Access Scope</label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {distances.map(d => (
+                  <label key={d.id} className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-surface-variant/30">
+                    <input 
+                      type="checkbox"
+                      checked={selectedDistances.has(d.id)}
+                      onChange={() => toggleDistance(d.id)}
+                      className="w-4 h-4 text-primary rounded"
+                    />
+                    <span className="text-sm">{d.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Access Zones (Required)</label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {zones.map(z => (
+                <label key={z.id} className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-surface-variant/30">
+                  <input 
+                    type="checkbox"
+                    checked={selectedZones.has(z.id)}
+                    onChange={() => toggleZone(z.id)}
+                    className="w-4 h-4 text-primary rounded"
+                  />
+                  <span className="text-sm">{z.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Expiration (Optional)</label>
+            <input 
+              type="datetime-local" 
+              value={expiresAt}
+              onChange={(e) => setExpiresAt(e.target.value)}
+              className="px-4 py-2 border rounded-xl"
             />
           </div>
-          <button type="submit" className="bg-primary text-white px-6 py-2 rounded-xl h-10 hover:bg-primary/90">
-            Assign to Event
+
+          <button 
+            type="submit" 
+            disabled={creating}
+            className="bg-primary text-white px-6 py-2 rounded-xl h-10 hover:bg-primary/90 disabled:opacity-50"
+          >
+            {creating ? 'Creating...' : 'Send Scanner Access'}
           </button>
         </form>
-
-        {isNotMember && (
-          <div className="mt-4 p-4 bg-secondary-container/50 border border-secondary/20 rounded-xl flex items-center justify-between">
-            <div className="text-on-secondary-container">
-              <p className="font-semibold">This person is not a workspace member yet.</p>
-              <p className="text-sm opacity-80">You must invite them to the workspace before they can be assigned.</p>
-            </div>
-            <button 
-              onClick={handleInviteToWorkspace}
-              disabled={inviting}
-              className="bg-secondary text-on-secondary px-4 py-2 rounded-lg font-medium hover:bg-secondary/90 disabled:opacity-50"
-            >
-              {inviting ? 'Inviting...' : 'Invite to Workspace'}
-            </button>
-          </div>
-        )}
-
-        {invitationLink && (
-          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl space-y-2">
-            <p className="font-semibold text-green-800">{successMsg}</p>
-            <p className="text-sm text-green-700">Share this link with them to join the workspace. Once they accept, you can assign them to this event.</p>
-            <div className="flex items-center gap-2 mt-2">
-              <input 
-                type="text" 
-                readOnly 
-                value={window.location.origin + invitationLink} 
-                className="flex-1 bg-white border border-green-200 px-3 py-2 rounded-lg text-sm text-on-surface"
-              />
-              <button 
-                onClick={() => navigator.clipboard.writeText(window.location.origin + invitationLink)}
-                className="bg-white border border-green-300 text-green-800 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-100"
-              >
-                Copy Link
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* SECTION B: Event Volunteers */}
+      {/* SECTION B: Active Scanner Sessions */}
       <div className="space-y-6 pt-4">
-        <h2 className="text-lg font-bold">Event Volunteers</h2>
-        {volunteers.map((vol) => (
-          <div key={vol.id} className="border border-outline-variant rounded-2xl p-6 bg-surface flex flex-col gap-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="font-bold text-lg">{vol.users?.email}</h3>
-                <span className="inline-block px-2 py-1 text-xs rounded-full bg-primary-container text-primary mt-2">
-                  {vol.role}
-                </span>
-                <span className={`inline-block px-2 py-1 text-xs rounded-full ml-2 ${vol.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {vol.status}
-                </span>
-              </div>
-              <button 
-                onClick={() => handleRemoveVolunteer(vol.user_id)}
-                className="text-error hover:bg-error-container/50 px-4 py-2 rounded-xl text-sm"
-              >
-                Remove from Event
-              </button>
-            </div>
-            
-            <div className="border-t pt-4">
-              <h4 className="font-medium text-sm mb-3">Assigned Scanner Zones</h4>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {zones.map(zone => {
-                  const isAssigned = vol.zones?.some((z: any) => z.zone_id === zone.id);
-                  return (
-                    <label key={zone.id} className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-surface-variant/30">
-                      <input 
-                        type="checkbox"
-                        checked={isAssigned}
-                        onChange={() => handleToggleZone(vol.user_id, zone.id, isAssigned)}
-                        className="w-4 h-4 text-primary"
-                      />
-                      <span className="text-sm">{zone.name}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        ))}
-        {volunteers.length === 0 && (
-          <div className="text-center p-12 text-on-surface-variant border rounded-2xl border-dashed">
-            No volunteers assigned to this event yet.
-          </div>
-        )}
+        <h2 className="text-lg font-bold">Active Scanner Sessions</h2>
+        
+        <div className="overflow-x-auto border border-outline-variant rounded-2xl">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-surface-variant/30 text-sm">
+              <tr>
+                <th className="p-4 font-medium text-on-surface-variant">Volunteer</th>
+                <th className="p-4 font-medium text-on-surface-variant">Access Scopes</th>
+                <th className="p-4 font-medium text-on-surface-variant">Zones</th>
+                <th className="p-4 font-medium text-on-surface-variant">Expires</th>
+                <th className="p-4 font-medium text-on-surface-variant">Status</th>
+                <th className="p-4 font-medium text-on-surface-variant text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-outline-variant">
+              {sessions.map((session) => (
+                <tr key={session.id} className="hover:bg-surface-variant/10">
+                  <td className="p-4">
+                    <p className="font-medium">{session.volunteer_email}</p>
+                    <p className="text-xs text-on-surface-variant mt-1">
+                      Created: {new Date(session.created_at).toLocaleDateString()}
+                    </p>
+                  </td>
+                  <td className="p-4 text-sm">
+                    {session.allowed_scopes?.distance_category_ids?.length > 0 
+                      ? distances.filter(d => session.allowed_scopes.distance_category_ids.includes(d.id)).map(d => d.name).join(', ')
+                      : 'All (or None required)'}
+                  </td>
+                  <td className="p-4 text-sm">
+                    {session.volunteer_scanner_zones?.map((z: any) => z.access_zones?.name).join(', ') || 'None'}
+                  </td>
+                  <td className="p-4 text-sm">
+                    {new Date(session.expires_at).toLocaleString()}
+                  </td>
+                  <td className="p-4">
+                    <span className={`inline-flex px-2 py-1 text-xs rounded-full ${session.status === 'active' && new Date(session.expires_at).getTime() > Date.now() ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      {session.status === 'active' && new Date(session.expires_at).getTime() < Date.now() ? 'expired' : session.status}
+                    </span>
+                  </td>
+                  <td className="p-4 text-right">
+                    {session.status === 'active' && (
+                      <button 
+                        onClick={() => handleRevoke(session.id)}
+                        className="text-error hover:bg-error-container/50 px-3 py-1.5 rounded-lg text-sm"
+                      >
+                        Revoke
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {sessions.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-on-surface-variant border-dashed">
+                    No scanner sessions found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
