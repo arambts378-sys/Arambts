@@ -11,8 +11,8 @@ async function generate() {
   console.log("🛠️ Starting Public Certificate QR Generator...\n");
 
   const certificates = [
-    { url: 'https://arambts.in/certificate', fileName: 'certificate-qr.png' },
-    { url: 'https://arambts.in/certificate/5km', fileName: 'certificate-5km-qr.png' }
+    { url: 'https://arambts.vercel.app/certificate', fileName: 'certificate-qr.png' },
+    { url: 'https://arambts.vercel.app/certificate/5km', fileName: 'certificate-5km-qr.png' }
   ];
 
   for (const cert of certificates) {

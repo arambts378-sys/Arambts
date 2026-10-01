@@ -201,7 +201,7 @@ export const qrCredentialsService = {
       return { valid: false, reason: 'QR code has expired' };
     }
 
-    const reg = credential.registrations as any;
+    const reg = credential.registrations as Record<string, unknown> | null;
     if (!reg || reg.status !== 'confirmed') {
       return { valid: false, reason: 'Registration is not confirmed' };
     }

@@ -1,8 +1,17 @@
 import { jobQueue } from './jobQueue';
 import { emailProvider } from './providers/email';
 import { googleSheetsProvider } from './providers/googleSheets';
-import { qrCredentialsService } from '@/services/qrCredentials';
 import { createAdminClient } from '@/lib/supabase/admin';
+
+interface IntegrationJob {
+  id: string;
+  event_id: string;
+  provider: string;
+  event_type: string;
+  attempts: number;
+  max_attempts?: number;
+  payload: Record<string, unknown>;
+}
 
 export const processIntegrationJobs = async () => {
   const processorId = `proc_${Math.random().toString(36).substring(7)}`;
@@ -19,17 +28,19 @@ export const processRegistrationIntegrationJobs = async (registrationId: string)
   return processJobs(jobs, processorId);
 };
 
-const processJobs = async (jobs: any[], processorId: string) => {
+const processJobs = async (jobs: IntegrationJob[], processorId: string) => {
   if (!jobs || jobs.length === 0) {
     return { processed: 0, succeeded: 0, failed: 0 };
   }
+  
+  // Note: processorId is used for tracking claims if needed
 
   let succeeded = 0;
   let failed = 0;
 
   // Group jobs by event to fetch configurations efficiently
   const supabase = createAdminClient();
-  const eventIds = [...new Set(jobs.map((j: any) => j.event_id))];
+  const eventIds = [...new Set(jobs.map((j) => j.event_id))];
   const eventsData = await supabase.from('events').select('*').in('id', eventIds);
   const events = eventsData.data || [];
   
@@ -72,8 +83,9 @@ const processJobs = async (jobs: any[], processorId: string) => {
       });
       succeeded++;
 
-    } catch (err: any) {
-      console.error(`Job ${job.id} failed:`, err);
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      console.error(`Job ${job.id} failed:`, errorMsg);
       
       const nextAttempts = job.attempts + 1;
       const maxAttempts = job.max_attempts || 5;
@@ -87,7 +99,7 @@ const processJobs = async (jobs: any[], processorId: string) => {
       await jobQueue.updateJobStatus(job.id, {
         status,
         attempts: nextAttempts,
-        last_error: err.message || 'Unknown error',
+        last_error: errorMsg,
         next_attempt_at: nextAttemptAt,
         processed_at: status === 'failed' ? new Date().toISOString() : null,
         locked_at: null,

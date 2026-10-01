@@ -11,10 +11,10 @@ export default function Hero({ event, section }: HeroProps) {
   const content = section?.content || {};
   const hasFlyer = !!content.image;
   
-  const layout = content.layout || (hasFlyer ? 'banner' : 'standard');
-  const imageFit = content.imageFit || 'contain';
-  const overlay = content.overlay || 'none';
-  const overlayOpacity = Number(content.overlayOpacity || '50') / 100;
+  const layout = (content.layout as string) || (hasFlyer ? 'banner' : 'standard');
+  const imageFit = (content.imageFit as string) || 'contain';
+  const overlay = (content.overlay as string) || 'none';
+  const overlayOpacity = Number((content.overlayOpacity as string) || '50') / 100;
   
   const showTitle = content.showTitle ?? (hasFlyer ? false : true);
   const showDate = content.showDate ?? (hasFlyer ? false : true);
@@ -22,17 +22,17 @@ export default function Hero({ event, section }: HeroProps) {
   const showDescription = content.showDescription ?? (hasFlyer ? false : true);
   
   const showPrimaryCta = content.showPrimaryCta ?? true;
-  const primaryCtaText = content.primaryCtaText || "Register Now";
-  const primaryCtaDest = content.primaryCtaDest || `/events/${event?.slug || event?.id}/register`;
+  const primaryCtaText = (content.primaryCtaText as string) || "Register Now";
+  const primaryCtaDest = (content.primaryCtaDest as string) || `/events/${event?.slug || event?.id}/register`;
   
   const showSecondaryCta = content.showSecondaryCta ?? false;
-  const secondaryCtaText = content.secondaryCtaText || "View Agenda";
-  const secondaryCtaDest = content.secondaryCtaDest || "#agenda";
+  const secondaryCtaText = (content.secondaryCtaText as string) || "View Agenda";
+  const secondaryCtaDest = (content.secondaryCtaDest as string) || "#agenda";
   
   const hasAnyEventInfo = showTitle || showDate || showLocation || showDescription || showPrimaryCta || showSecondaryCta;
   
-  const heroHeight = content.heroHeight || 'medium';
-  const imageAlignment = content.imageAlignment || 'center';
+  const heroHeight = (content.heroHeight as string) || 'medium';
+  const imageAlignment = (content.imageAlignment as string) || 'center';
   
   // Height classes based on configuration
   let heightClass = 'min-h-[85vh]'; // medium
@@ -124,13 +124,13 @@ export default function Hero({ event, section }: HeroProps) {
         <div className="w-full md:w-1/2 relative bg-black/20 flex items-center justify-center min-h-[50vh]">
           <div className="absolute inset-0 z-0">
              <img
-              src={content.image}
+              src={content.image as string}
               alt={event.name}
               className="w-full h-full object-cover opacity-20 blur-xl"
             />
           </div>
           <img
-            src={content.image}
+            src={content.image as string}
             alt={`${event.name} Flyer`}
             className={`relative z-10 w-full h-full max-h-[85vh] p-8 object-${imageFit} object-${imageAlignment}`}
           />
@@ -146,7 +146,7 @@ export default function Hero({ event, section }: HeroProps) {
         {/* Background (blurred flyer) */}
         <div className="absolute inset-0 z-0 bg-brand-dark/90">
           <img
-            src={content.image}
+            src={content.image as string}
             alt="Background"
             className="w-full h-full object-cover opacity-30 blur-3xl scale-110"
           />
@@ -157,7 +157,7 @@ export default function Hero({ event, section }: HeroProps) {
         {/* Flyer Image Container */}
         <div className="relative z-10 w-full h-full flex-1 flex flex-col items-center justify-center px-4">
           <img 
-            src={content.image} 
+            src={content.image as string} 
             alt={`${event.name} Flyer`}
             className={`w-full h-full max-h-[70vh] object-${imageFit} object-${imageAlignment} drop-shadow-2xl rounded-sm`}
             style={{ maxWidth: '90%' }}

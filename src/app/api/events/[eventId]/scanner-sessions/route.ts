@@ -24,7 +24,7 @@ export async function POST(
 
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { data: event } = await supabase.from('events').select('workspace_id, name').eq('id', eventId).single();
+    const { data: event } = await supabase.from('events').select('id, workspace_id, name').eq('id', eventId).single();
     if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
 
     const { data: hasPerm } = await supabase.rpc('has_permission', {

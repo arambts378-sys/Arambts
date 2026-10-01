@@ -3,21 +3,48 @@ import QRCode from 'qrcode';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { qrCredentialsService } from '@/services/qrCredentials';
 
+interface EventPayload {
+  id: string;
+  name: string;
+  type?: string;
+  date?: string;
+  venue?: string;
+}
+
+interface EmailConfig {
+  host: string;
+  port: string;
+  user: string;
+  pass: string;
+  fromEmail?: string;
+  fromName?: string;
+  subject?: string;
+  customMessage?: string;
+}
+
+interface JobPayload {
+  payload: Record<string, unknown>;
+}
+
 export const emailProvider = {
-  process: async (job: any, event: any, config: any) => {
+  process: async (job: JobPayload, event: EventPayload, config: EmailConfig) => {
     if (!config || !config.host) {
       throw new Error('EMAIL_INTEGRATION_NOT_CONFIGURED');
     }
 
-    let { host, port, user, pass, fromEmail, fromName, subject, customMessage } = config;
+    const { host, port, user, fromEmail, fromName, subject, customMessage } = config;
+    let pass = config.pass;
     try {
       const { decryptSecret } = await import('@/utils/encryption');
       pass = decryptSecret(pass);
-    } catch (e) {
+    } catch {
       throw new Error('EMAIL_INTEGRATION_NOT_CONFIGURED');
     }
 
-    const { registrationNumber, attendee } = job.payload;
+    const { registrationNumber, attendee } = job.payload as {
+      registrationNumber: string;
+      attendee: { firstName: string; email: string };
+    };
 
     const transporter = nodemailer.createTransport({
       host,
@@ -53,20 +80,25 @@ export const emailProvider = {
     return { success: true };
   },
 
-  sendQrDelivery: async (job: any, event: any, config: any) => {
+  sendQrDelivery: async (job: JobPayload, event: EventPayload, config: EmailConfig) => {
     if (!config || !config.host) {
       throw new Error('EMAIL_INTEGRATION_NOT_CONFIGURED');
     }
 
-    let { host, port, user, pass, fromEmail, fromName, subject, customMessage } = config;
+    const { host, port, user, fromEmail, fromName, subject, customMessage } = config;
+    let pass = config.pass;
     try {
       const { decryptSecret } = await import('@/utils/encryption');
       pass = decryptSecret(pass);
-    } catch (e) {
+    } catch {
       throw new Error('EMAIL_INTEGRATION_NOT_CONFIGURED');
     }
 
-    let { registrationId, registrationNumber, attendee } = job.payload;
+    let { registrationId, registrationNumber, attendee } = job.payload as {
+      registrationId: string;
+      registrationNumber: string;
+      attendee: { firstName: string; lastName: string; email: string };
+    };
 
     // 1. Resolve active QR credential
     const supabase = createAdminClient();
@@ -99,6 +131,7 @@ export const emailProvider = {
 
     // Fallback if payload is missing full attendee info
     if (!attendee || !attendee.email) {
+      // Types are complex from Supabase relation joins
       const person = credential.registrations?.event_people?.[0]?.people;
       if (!person) throw new Error('Attendee details not found');
       
@@ -107,15 +140,18 @@ export const emailProvider = {
         lastName: person.last_name,
         email: person.email
       };
+      
       registrationNumber = credential.registrations?.registration_number;
     }
 
     // Fetch Distance Category for Walkathons
     let distanceCategoryName = null;
+    
     if (event.type === 'Walkathon' && credential.registrations?.distance_category_id) {
       const { data: distData } = await supabase
         .from('walkathon_distance_categories')
         .select('name')
+        
         .eq('id', credential.registrations.distance_category_id)
         .maybeSingle();
       if (distData) distanceCategoryName = distData.name;
@@ -235,20 +271,27 @@ export const emailProvider = {
     return { success: true };
   },
 
-  sendScannerAccess: async (config: any, event: any, sessionData: any) => {
+  sendScannerAccess: async (config: EmailConfig, event: EventPayload, sessionData: Record<string, unknown>) => {
     if (!config || !config.host) {
       throw new Error('EMAIL_INTEGRATION_NOT_CONFIGURED');
     }
 
-    let { host, port, user, pass, fromEmail, fromName, subject } = config;
+    const { host, port, user, fromEmail, fromName, subject } = config;
+    let pass = config.pass;
     try {
       const { decryptSecret } = await import('@/utils/encryption');
       pass = decryptSecret(pass);
-    } catch (e) {
+    } catch {
       throw new Error('EMAIL_INTEGRATION_NOT_CONFIGURED');
     }
 
-    const { volunteerEmail, scannerLink, allowedZones, allowedDistances, expiresAt } = sessionData;
+    const { volunteerEmail, scannerLink, allowedZones, allowedDistances, expiresAt } = sessionData as {
+      volunteerEmail: string;
+      scannerLink: string;
+      allowedZones: string[];
+      allowedDistances: string[];
+      expiresAt: string;
+    };
 
     const transporter = nodemailer.createTransport({
       host,
@@ -294,20 +337,27 @@ export const emailProvider = {
     return { success: true };
   },
 
-  sendCertificateDelivery: async (job: any, event: any, config: any) => {
+  sendCertificateDelivery: async (job: JobPayload, event: EventPayload, config: EmailConfig) => {
     if (!config || !config.host) {
       throw new Error('EMAIL_INTEGRATION_NOT_CONFIGURED');
     }
 
-    let { host, port, user, pass, fromEmail, fromName } = config;
+    const { host, port, user, fromEmail, fromName } = config;
+    let pass = config.pass;
     try {
       const { decryptSecret } = await import('@/utils/encryption');
       pass = decryptSecret(pass);
-    } catch (e) {
+    } catch {
       throw new Error('EMAIL_INTEGRATION_NOT_CONFIGURED');
     }
 
-    const { certificateNumber, name, email, distance, certificateUrl } = job.payload;
+    const { certificateNumber, name, email, distance, certificateUrl } = job.payload as {
+      certificateNumber: string;
+      name: string;
+      email: string;
+      distance: string;
+      certificateUrl: string;
+    };
     
     // Download certificate from storage
     const supabase = createAdminClient();

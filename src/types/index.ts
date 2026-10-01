@@ -17,7 +17,7 @@ export interface WebsiteSection {
     overlay?: 'none' | 'light' | 'dark';
     showEventInfo?: boolean;
     heroHeight?: 'small' | 'medium' | 'large';
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -37,7 +37,7 @@ export interface WebsiteState {
   status: 'draft' | 'published';
   theme: ThemeConfig;
   sections: WebsiteSection[];
-  seo?: any;
+  seo?: Record<string, unknown>;
 }
 
 export interface WebsiteConfig {
@@ -137,7 +137,7 @@ export interface Registration {
   registered_at: string;
   confirmed_at?: string | null;
   cancelled_at?: string | null;
-  metadata: any;
+  metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
   distance_category_id?: string | null;

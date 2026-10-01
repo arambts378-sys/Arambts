@@ -27,8 +27,8 @@ export const registrationsService = {
     const supabase = createClient();
     
     const cleanUpdates = { ...updates };
-    delete (cleanUpdates as any).event_id;
-    delete (cleanUpdates as any).created_at;
+    delete cleanUpdates.event_id;
+    delete cleanUpdates.created_at;
     cleanUpdates.updated_at = new Date().toISOString();
 
     const { data, error } = await supabase

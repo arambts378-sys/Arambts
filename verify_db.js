@@ -1,5 +1,5 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
 
 async function run() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321';
@@ -12,7 +12,7 @@ async function run() {
   let results = {};
   
   async function checkTable(tableName) {
-    const { data, error } = await supabase.from(tableName).select('*').limit(1);
+    const { error } = await supabase.from(tableName).select('*').limit(1);
     if (error && error.code === '42P01') {
       return false; // Does not exist
     }

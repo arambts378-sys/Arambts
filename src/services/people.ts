@@ -156,9 +156,9 @@ export const peopleService = {
     
     // remove joined/readonly data from updates if present
     const cleanUpdates = { ...updates };
-    delete (cleanUpdates as any).id;
-    delete (cleanUpdates as any).workspace_id;
-    delete (cleanUpdates as any).created_at;
+    delete cleanUpdates.id;
+    delete cleanUpdates.workspace_id;
+    delete cleanUpdates.created_at;
     
     cleanUpdates.updated_at = new Date().toISOString();
 

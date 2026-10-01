@@ -109,8 +109,8 @@ export const speakersService = {
       const supabase = createClient();
       
       const cleanUpdates = { ...speakerUpdates };
-      delete (cleanUpdates as any).event_person_id;
-      delete (cleanUpdates as any).created_at;
+      delete cleanUpdates.event_person_id;
+      delete cleanUpdates.created_at;
       cleanUpdates.updated_at = new Date().toISOString();
 
       const { error } = await supabase

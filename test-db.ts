@@ -9,7 +9,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function run() {
   console.log("Checking if volunteer_scanner_sessions table exists...");
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('volunteer_scanner_sessions')
     .select('id')
     .limit(1);
