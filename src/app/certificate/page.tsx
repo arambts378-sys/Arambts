@@ -1,7 +1,5 @@
 import React from 'react';
-import dynamic from 'next/dynamic';
-
-const CertificateClient = dynamic(() => import('./CertificateClient'), { ssr: false });
+import CertificateClient from './CertificateClient';
 
 export const metadata = {
   title: 'ARAM BTS Certificate',

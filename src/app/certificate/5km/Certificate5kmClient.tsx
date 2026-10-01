@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState } from 'react';
-import { getCertificateSvg } from '@/lib/certificate/template';
+import { getCertificate5kmSvg } from '@/lib/certificate/template5km';
 
-export default function CertificateClient() {
+export default function Certificate5kmClient() {
   const [formData, setFormData] = useState({ name: '', email: '' });
   const [status, setStatus] = useState<'IDLE' | 'LOADING' | 'SUCCESS'>('IDLE');
   const [message, setMessage] = useState<{ text: string, type: 'error' | 'success' } | null>(null);
 
-  const svgContent = getCertificateSvg(formData.name);
+  const svgContent = getCertificate5kmSvg(formData.name);
 
   const handleAction = async (action: 'download' | 'email') => {
     if (!formData.name.trim()) {
@@ -31,7 +31,7 @@ export default function CertificateClient() {
           name: formData.name, 
           email: formData.email, 
           action,
-          certificateType: 'standard'
+          certificateType: '5KM'
         })
       });
 
@@ -53,8 +53,8 @@ export default function CertificateClient() {
         const link = document.createElement('a');
         link.href = objectUrl;
         
-        const safeName = formData.name.trim().replace(/[^a-zA-Z0-9 -]/g, '').replace(/\\s+/g, '-');
-        link.download = `ARAM-BTS-Certificate-${safeName}.png`;
+        const safeName = formData.name.trim().replace(/[^a-zA-Z0-9 -]/g, '').replace(/\s+/g, '-');
+        link.download = `ARAM-BTS-5KM-Certificate-${safeName}.png`;
         
         document.body.appendChild(link);
         link.click();
@@ -82,7 +82,7 @@ export default function CertificateClient() {
       <div className="w-full max-w-4xl bg-white rounded-3xl shadow-lg border border-outline-variant/30 p-6 md:p-10 flex flex-col items-center">
         
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-black text-primary uppercase tracking-wider">ARAM BTS</h1>
+          <h1 className="text-3xl font-black text-primary uppercase tracking-wider">ARAM BTS 5KM</h1>
           <h2 className="text-xl font-bold text-on-surface-variant mt-2">Your Certificate</h2>
         </div>
 
