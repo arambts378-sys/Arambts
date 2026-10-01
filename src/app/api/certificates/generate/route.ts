@@ -21,7 +21,6 @@ export async function POST(request: Request) {
     
     if (email && typeof email === 'string' && email.trim().length > 0) {
       normalizedEmail = email.trim().toLowerCase();
-      // Simple email regex validation only required for email action
       if (action === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
         return NextResponse.json({ success: false, error: 'Invalid email format' }, { status: 400 });
       }
@@ -35,29 +34,27 @@ export async function POST(request: Request) {
 
     const supabase = createAdminClient();
 
+    // For email: check if this email+distance combination already has a successfully-sent cert
     if (action === 'email' && normalizedEmail && eventId) {
       const { data: existingCert } = await supabase
         .from('certificate_issuances')
-        .select('certificate_url')
+        .select('certificate_url, email_status')
         .eq('event_id', eventId)
         .eq('normalized_email', normalizedEmail)
         .eq('distance', certificateType === '5KM' ? '5KM' : 'standard')
         .maybeSingle();
 
-      if (existingCert && existingCert.certificate_url) {
-        // Just return the existing one without doing more work
-        const { data: publicUrlData } = await supabase.storage
-          .from('certificates')
-          .createSignedUrl(existingCert.certificate_url, 60 * 60);
-
+      if (existingCert && existingCert.email_status === 'sent') {
+        // Already sent successfully — don't resend
         return NextResponse.json({
           success: true,
-          certificate_url: publicUrlData?.signedUrl
+          message: 'Certificate was already sent to your email.'
         });
       }
+      // If it exists but failed, we'll generate a new cert and try again
     }
 
-    // 3. Generate Certificate Content using Shared Rendering Service
+    // 3. Generate Certificate PNG using unified renderer
     const pngBuffer = await generateCertificatePng({
       type: certificateType === '5KM' ? '5KM' : 'standard',
       name: cleanName
@@ -77,11 +74,11 @@ export async function POST(request: Request) {
       });
     }
 
-    // FROM HERE ON, WE ARE PROCESSING EMAIL ACTION WHICH REQUIRES STORAGE & DB
+    // FROM HERE ON, WE ARE PROCESSING EMAIL ACTION
     const certNumber = `BTS-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
     const fileName = `${eventId}/${certNumber}.png`;
 
-    // 4. Upload to Storage
+    // 4. Upload PNG to Supabase Storage (for record-keeping)
     const { error: uploadError } = await supabase.storage
       .from('certificates')
       .upload(fileName, pngBuffer, {
@@ -93,7 +90,7 @@ export async function POST(request: Request) {
       throw new Error(`Upload failed: ${uploadError.message}`);
     }
 
-    // 5. Save to DB and Queue Email
+    // 5. Save issuance record
     if (action === 'email' && normalizedEmail && eventId) {
       const { error: dbError } = await supabase
         .from('certificate_issuances')
@@ -103,54 +100,83 @@ export async function POST(request: Request) {
           name: cleanName,
           email: email.trim(),
           normalized_email: normalizedEmail,
-          distance: certificateType === '5KM' ? '5KM' : 'standard', // Maps to DB type
+          distance: certificateType === '5KM' ? '5KM' : 'standard',
           certificate_url: fileName,
           status: 'generated',
           email_status: 'pending'
         });
 
-      if (dbError) {
-        // Check for uniqueness violation
-        if (dbError.code === '23505') {
-          const { data: duplicateCert } = await supabase
-            .from('certificate_issuances')
-            .select('certificate_url')
-            .eq('event_id', eventId)
-            .eq('normalized_email', normalizedEmail)
-            .eq('distance', certificateType === '5KM' ? '5KM' : 'standard')
-            .single();
-            
-          if (duplicateCert) {
-            const { data: signed } = await supabase.storage.from('certificates').createSignedUrl(duplicateCert.certificate_url, 3600);
-            return NextResponse.json({ success: true, certificate_url: signed?.signedUrl });
-          }
-        }
+      if (dbError && dbError.code !== '23505') {
         throw new Error(`DB Insert failed: ${dbError.message}`);
       }
 
-      // Queue Email Job
-      const idempotencyKey = `${eventId}:${certNumber}:email`;
-      const emailPayload = {
-        certificateNumber: certNumber,
-        name: cleanName,
-        email: email.trim(),
-        distance: certificateType === '5KM' ? '5KM' : 'Walkathon',
-        certificateUrl: fileName
+      // 6. Fetch the event's email integration config (where encrypted SMTP creds live)
+      const { data: integrationData } = await supabase
+        .from('event_integrations')
+        .select('config')
+        .eq('event_id', eventId)
+        .eq('provider', 'email')
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (!integrationData) {
+        // No email integration configured — update status and tell user to download
+        await supabase.from('certificate_issuances')
+          .update({ email_status: 'failed' })
+          .eq('certificate_number', certNumber);
+
+        return NextResponse.json({
+          success: false,
+          error: 'Email service not configured for this event. Please download your certificate instead.'
+        }, { status: 503 });
+      }
+
+      const config = integrationData.config as {
+        host: string; port: string; user: string; pass: string;
+        fromEmail?: string; fromName?: string;
       };
 
-      await supabase.from('integration_jobs').insert({
-        event_id: eventId,
-        provider: 'email',
-        event_type: 'certificate_delivery',
-        payload: emailPayload,
-        idempotency_key: idempotencyKey,
-        next_attempt_at: new Date().toISOString()
-      });
+      // 7. Send certificate email SYNCHRONOUSLY (no cron/background worker needed)
+      const { emailProvider } = await import('@/services/integrations/providers/email');
+      const { data: eventData } = await supabase
+        .from('events')
+        .select('id, name')
+        .eq('id', eventId)
+        .single();
+
+      const certJob = {
+        payload: {
+          certificateNumber: certNumber,
+          name: cleanName,
+          email: email.trim(),
+          distance: certificateType === '5KM' ? '5KM' : 'Walkathon',
+          certificateUrl: fileName
+        }
+      };
+
+      try {
+        await emailProvider.sendCertificateDelivery(certJob, eventData!, config);
+        // Mark as sent
+        await supabase.from('certificate_issuances')
+          .update({ email_status: 'sent' })
+          .eq('certificate_number', certNumber);
+      } catch (emailError: unknown) {
+        const errMsg = emailError instanceof Error ? emailError.message : String(emailError);
+        console.error('Certificate email send failed:', errMsg);
+        await supabase.from('certificate_issuances')
+          .update({ email_status: 'failed' })
+          .eq('certificate_number', certNumber);
+        return NextResponse.json({
+          success: false,
+          error: 'Certificate was generated but email delivery failed. Please try downloading instead.',
+          detail: errMsg
+        }, { status: 500 });
+      }
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Certificate queued for email delivery'
+      message: 'Certificate sent to your email successfully!'
     });
 
   } catch (error: unknown) {
@@ -160,4 +186,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: 'Internal server error', message: msg, stack }, { status: 500 });
   }
 }
-

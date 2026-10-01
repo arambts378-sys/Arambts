@@ -77,7 +77,7 @@ export default function CertificateClient() {
       } else {
         const data = await res.json();
         if (data.success) {
-          setMessage({ text: 'Certificate generated and queued for email delivery!', type: 'success' });
+          setMessage({ text: data.message || 'Certificate sent to your email successfully!', type: 'success' });
         } else {
           setMessage({ text: data.error || 'Failed to process request.', type: 'error' });
         }
