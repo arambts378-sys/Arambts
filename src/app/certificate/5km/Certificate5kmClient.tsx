@@ -1,14 +1,15 @@
 "use client";
 
 import React, { useState } from 'react';
-import { getCertificate5kmSvg } from '@/lib/certificate/template5km';
+import { useDebounce } from 'use-debounce';
 
 export default function Certificate5kmClient() {
   const [formData, setFormData] = useState({ name: '', email: '' });
   const [status, setStatus] = useState<'IDLE' | 'LOADING' | 'SUCCESS'>('IDLE');
   const [message, setMessage] = useState<{ text: string, type: 'error' | 'success' } | null>(null);
 
-  const svgContent = getCertificate5kmSvg(formData.name);
+  // Debounce the name so we don't bombard the server on every keystroke
+  const [debouncedName] = useDebounce(formData.name, 500);
 
   const handleAction = async (action: 'download' | 'email') => {
     if (!formData.name.trim()) {
@@ -87,11 +88,19 @@ export default function Certificate5kmClient() {
         </div>
 
         {/* Live Preview */}
-        <div className="w-full mb-10 border border-outline-variant/50 rounded-2xl overflow-hidden shadow-sm bg-gray-50 flex items-center justify-center p-2 md:p-6">
-          <div 
-            className="w-full max-w-3xl [&>svg]:block [&>svg]:w-full [&>svg]:h-auto [&>svg]:max-w-full"
-            dangerouslySetInnerHTML={{ __html: svgContent }} 
-          />
+        <div className="w-full mb-10 border border-outline-variant/50 rounded-2xl overflow-hidden shadow-sm bg-gray-50 flex items-center justify-center p-2 md:p-6 min-h-[300px]">
+          {debouncedName.trim() === '' ? (
+            <div className="text-gray-400 text-sm font-medium py-20 text-center">
+              Enter your name below to generate preview
+            </div>
+          ) : (
+            <img 
+              src={`/api/certificates/preview?type=5KM&name=${encodeURIComponent(debouncedName.trim())}`}
+              alt="Certificate Preview"
+              className="w-full max-w-3xl h-auto drop-shadow-sm rounded"
+              style={{ aspectRatio: '3367/2381' }}
+            />
+          )}
         </div>
 
         {message && (

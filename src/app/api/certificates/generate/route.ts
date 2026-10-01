@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import sharp from 'sharp';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { getCertificateSvg } from '@/lib/certificate/template';
-import { getCertificate5kmSvg } from '@/lib/certificate/template5km';
+import { generateCertificatePng } from '@/lib/certificate/renderer';
 
 export async function POST(request: Request) {
   try {
@@ -59,41 +57,18 @@ export async function POST(request: Request) {
       }
     }
 
-    // 3. Generate Certificate Content using Shared Template
-    // Fetch static assets via HTTP to prevent them from being bundled into the Vercel serverless function (which has a 50MB limit)
-    const host = request.headers.get('host') || 'localhost:3000';
-    const protocol = host.includes('localhost') ? 'http' : 'https';
-    const baseUrl = `${protocol}://${host}`;
-
-    const bgFilename = certificateType === '5KM' ? 'certificate-bg-5km.png' : 'certificate-bg-3km.png';
-    const bgResponse = await fetch(`${baseUrl}/${bgFilename}`);
-    if (!bgResponse.ok) throw new Error(`Failed to load background image: ${bgFilename}`);
-    const bgArrayBuffer = await bgResponse.arrayBuffer();
-    const bgBase64 = `data:image/png;base64,${Buffer.from(bgArrayBuffer).toString('base64')}`;
-
-    const fontResponse = await fetch(`${baseUrl}/fonts/Avingal.ttf`);
-    if (!fontResponse.ok) throw new Error('Failed to load font file');
-    const fontArrayBuffer = await fontResponse.arrayBuffer();
-    const fontBase64 = `data:font/ttf;charset=utf-8;base64,${Buffer.from(fontArrayBuffer).toString('base64')}`;
-
-    const svgTemplate = certificateType === '5KM' 
-      ? getCertificate5kmSvg(cleanName, bgBase64, fontBase64) 
-      : getCertificateSvg(cleanName, bgBase64, fontBase64);
-
-    // Convert SVG to PNG
-    // We explicitly set a higher density and resize back to the official template resolution
-    // to bypass any native librsvg downscaling/WebGL texture limits on certain host machines.
-    const pngBuffer = await sharp(Buffer.from(svgTemplate), { density: 144 })
-      .resize(3367, 2381, { fit: 'fill' })
-      .png()
-      .toBuffer();
+    // 3. Generate Certificate Content using Shared Rendering Service
+    const pngBuffer = await generateCertificatePng({
+      type: certificateType === '5KM' ? '5KM' : 'standard',
+      name: cleanName
+    });
 
     // IF ACTION IS DOWNLOAD, RETURN PNG DIRECTLY AND EXIT
     if (action === 'download') {
       const prefix = certificateType === '5KM' ? 'ARAM-BTS-5KM-Certificate' : 'ARAM-BTS-Certificate';
       const safeFilename = `${prefix}-${cleanName.replace(/[^a-zA-Z0-9 -]/g, '').replace(/\s+/g, '-')}.png`;
       
-      return new NextResponse(pngBuffer, {
+      return new NextResponse(pngBuffer as any, {
         headers: {
           'Content-Type': 'image/png',
           'Content-Disposition': `attachment; filename="${safeFilename}"`,
