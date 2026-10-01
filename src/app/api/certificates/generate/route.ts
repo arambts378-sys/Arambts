@@ -178,9 +178,11 @@ export async function POST(request: Request) {
       message: 'Certificate queued for email delivery'
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Certificate generation error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error', message: error.message, stack: error.stack }, { status: 500 });
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    const stack = error instanceof Error ? error.stack : undefined;
+    return NextResponse.json({ success: false, error: 'Internal server error', message: msg, stack }, { status: 500 });
   }
 }
 
