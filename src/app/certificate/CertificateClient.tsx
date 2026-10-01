@@ -1,14 +1,28 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getCertificateSvg } from '@/lib/certificate/template';
+import { getCertificate5kmSvg } from '@/lib/certificate/template5km';
+
+type CertType = 'none' | '3km' | '5km';
 
 export default function CertificateClient() {
+  const [selectedType, setSelectedType] = useState<CertType>('none');
   const [formData, setFormData] = useState({ name: '', email: '' });
   const [status, setStatus] = useState<'IDLE' | 'LOADING' | 'SUCCESS'>('IDLE');
   const [message, setMessage] = useState<{ text: string, type: 'error' | 'success' } | null>(null);
 
-  const svgContent = getCertificateSvg(formData.name);
+  // Allow URL parameter selection
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const typeParam = params.get('type');
+    if (typeParam === '3km') setSelectedType('3km');
+    if (typeParam === '5km') setSelectedType('5km');
+  }, []);
+
+  const svgContent = selectedType === '5km' 
+    ? getCertificate5kmSvg(formData.name) 
+    : getCertificateSvg(formData.name);
 
   const handleAction = async (action: 'download' | 'email') => {
     if (!formData.name.trim()) {
@@ -31,12 +45,11 @@ export default function CertificateClient() {
           name: formData.name, 
           email: formData.email, 
           action,
-          certificateType: 'standard'
+          certificateType: selectedType === '5km' ? '5KM' : 'standard'
         })
       });
 
       if (!res.ok) {
-        // If it's a JSON error response, try to parse it
         try {
           const errorData = await res.json();
           setMessage({ text: errorData.error || 'Failed to process request.', type: 'error' });
@@ -53,8 +66,9 @@ export default function CertificateClient() {
         const link = document.createElement('a');
         link.href = objectUrl;
         
-        const safeName = formData.name.trim().replace(/[^a-zA-Z0-9 -]/g, '').replace(/\\s+/g, '-');
-        link.download = `ARAM-BTS-Certificate-${safeName}.png`;
+        const safeName = formData.name.trim().replace(/[^a-zA-Z0-9 -]/g, '').replace(/\s+/g, '-');
+        const prefix = selectedType === '5km' ? 'ARAM-BTS-5KM-Certificate' : 'ARAM-BTS-Certificate';
+        link.download = `${prefix}-${safeName}.png`;
         
         document.body.appendChild(link);
         link.click();
@@ -77,12 +91,49 @@ export default function CertificateClient() {
     }
   };
 
+  if (selectedType === 'none') {
+    return (
+      <div className="min-h-screen bg-surface-container-lowest flex flex-col items-center justify-center py-10 px-4 font-sans">
+        <div className="w-full max-w-lg bg-white rounded-3xl shadow-lg border border-outline-variant/30 p-8 text-center flex flex-col items-center">
+          <h1 className="text-3xl font-black text-primary uppercase tracking-wider mb-2">Certificate of Completion</h1>
+          <h2 className="text-lg font-bold text-on-surface-variant mb-8">Select your walkathon category</h2>
+          
+          <div className="flex flex-col gap-4 w-full">
+            <button
+              onClick={() => setSelectedType('3km')}
+              className="w-full py-5 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-all shadow-md text-xl"
+            >
+              [ 3 KM ]<br/><span className="text-sm font-medium opacity-90">3 KM Certificate</span>
+            </button>
+            <button
+              onClick={() => setSelectedType('5km')}
+              className="w-full py-5 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-600 transition-all shadow-md text-xl"
+            >
+              [ 5 KM ]<br/><span className="text-sm font-medium opacity-90">5 KM Certificate</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-surface-container-lowest flex flex-col items-center py-10 px-4 font-sans">
       <div className="w-full max-w-4xl bg-white rounded-3xl shadow-lg border border-outline-variant/30 p-6 md:p-10 flex flex-col items-center">
         
+        <div className="w-full flex justify-start mb-4">
+          <button 
+            onClick={() => { setSelectedType('none'); setMessage(null); setFormData({name: '', email: ''}); }}
+            className="text-primary font-bold flex items-center gap-1 hover:underline"
+          >
+            <span className="material-symbols-outlined text-sm">arrow_back</span> Back
+          </button>
+        </div>
+
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-black text-primary uppercase tracking-wider">ARAM BTS</h1>
+          <h1 className="text-3xl font-black text-primary uppercase tracking-wider">
+            {selectedType === '5km' ? 'ARAM BTS 5KM' : 'ARAM BTS'}
+          </h1>
           <h2 className="text-xl font-bold text-on-surface-variant mt-2">Your Certificate</h2>
         </div>
 

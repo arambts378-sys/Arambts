@@ -29,15 +29,15 @@ export async function POST(request: Request) {
       }
     }
 
+    // 2. Idempotency Check for Email Delivery
     const eventId = process.env.CERTIFICATE_EVENT_ID;
-    if (!eventId) {
+    if (action === 'email' && !eventId) {
       return NextResponse.json({ success: false, error: 'Event ID not configured' }, { status: 500 });
     }
 
     const supabase = createAdminClient();
 
-    // 2. Idempotency Check for Email Delivery
-    if (action === 'email' && normalizedEmail) {
+    if (action === 'email' && normalizedEmail && eventId) {
       const { data: existingCert } = await supabase
         .from('certificate_issuances')
         .select('certificate_url')
@@ -60,14 +60,45 @@ export async function POST(request: Request) {
     }
 
     // 3. Generate Certificate Content using Shared Template
-    const svgTemplate = certificateType === '5KM' ? getCertificate5kmSvg(cleanName) : getCertificateSvg(cleanName);
+    // For server-side rendering, we must embed the background image and font as base64
+    const fs = require('fs');
+    const path = require('path');
+    const bgFilename = certificateType === '5KM' ? 'certificate-bg-5km.png' : 'certificate-bg-3km.png';
+    const bgPath = path.join(process.cwd(), 'public', bgFilename);
+    const bgBuffer = fs.readFileSync(bgPath);
+    const bgBase64 = `data:image/png;base64,${bgBuffer.toString('base64')}`;
+
+    const fontPath = path.join(process.cwd(), 'public', 'fonts', 'Avingal.ttf');
+    const fontBuffer = fs.readFileSync(fontPath);
+    const fontBase64 = `data:font/ttf;charset=utf-8;base64,${fontBuffer.toString('base64')}`;
+
+    const svgTemplate = certificateType === '5KM' 
+      ? getCertificate5kmSvg(cleanName, bgBase64, fontBase64) 
+      : getCertificateSvg(cleanName, bgBase64, fontBase64);
 
     // Convert SVG to PNG
-    const pngBuffer = await sharp(Buffer.from(svgTemplate))
+    // We explicitly set a higher density and resize back to the official template resolution
+    // to bypass any native librsvg downscaling/WebGL texture limits on certain host machines.
+    const pngBuffer = await sharp(Buffer.from(svgTemplate), { density: 144 })
+      .resize(3367, 2381, { fit: 'fill' })
       .png()
       .toBuffer();
 
-    // We don't have a fixed distance to use in path anymore, so we use a safe structure
+    // IF ACTION IS DOWNLOAD, RETURN PNG DIRECTLY AND EXIT
+    if (action === 'download') {
+      const prefix = certificateType === '5KM' ? 'ARAM-BTS-5KM-Certificate' : 'ARAM-BTS-Certificate';
+      const safeFilename = `${prefix}-${cleanName.replace(/[^a-zA-Z0-9 -]/g, '').replace(/\s+/g, '-')}.png`;
+      
+      return new NextResponse(pngBuffer, {
+        headers: {
+          'Content-Type': 'image/png',
+          'Content-Disposition': `attachment; filename="${safeFilename}"`,
+          'Content-Length': pngBuffer.length.toString()
+        }
+      });
+    }
+
+    // FROM HERE ON, WE ARE PROCESSING EMAIL ACTION WHICH REQUIRES STORAGE & DB
     const certNumber = `BTS-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
     const fileName = `${eventId}/${certNumber}.png`;
 
@@ -83,8 +114,8 @@ export async function POST(request: Request) {
       throw new Error(`Upload failed: ${uploadError.message}`);
     }
 
-    // 5. Save to DB and Queue Email (Only if action is 'email' and we have an email address)
-    if (action === 'email' && normalizedEmail) {
+    // 5. Save to DB and Queue Email
+    if (action === 'email' && normalizedEmail && eventId) {
       const { error: dbError } = await supabase
         .from('certificate_issuances')
         .insert({
@@ -100,7 +131,7 @@ export async function POST(request: Request) {
         });
 
       if (dbError) {
-        // Check for uniqueness violation, maybe concurrent requests
+        // Check for uniqueness violation
         if (dbError.code === '23505') {
           const { data: duplicateCert } = await supabase
             .from('certificate_issuances')
@@ -124,7 +155,7 @@ export async function POST(request: Request) {
         certificateNumber: certNumber,
         name: cleanName,
         email: email.trim(),
-        distance: certificateType === '5KM' ? '5KM' : 'Walkathon', // Just placeholder if integration requires it
+        distance: certificateType === '5KM' ? '5KM' : 'Walkathon',
         certificateUrl: fileName
       };
 
@@ -137,24 +168,6 @@ export async function POST(request: Request) {
         next_attempt_at: new Date().toISOString()
       });
     }
-
-    if (action === 'download') {
-      const prefix = certificateType === '5KM' ? 'ARAM-BTS-5KM-Certificate' : 'ARAM-BTS-Certificate';
-      const safeFilename = `${prefix}-${cleanName.replace(/[^a-zA-Z0-9 -]/g, '').replace(/\\s+/g, '-')}.png`;
-      
-      return new NextResponse(pngBuffer, {
-        headers: {
-          'Content-Type': 'image/png',
-          'Content-Disposition': `attachment; filename="${safeFilename}"`,
-          'Content-Length': pngBuffer.length.toString()
-        }
-      });
-    }
-
-    // 6. Get Signed URL for immediate download (only used by email flow if needed, though we can just return success)
-    const { data: finalSignedUrl } = await supabase.storage
-      .from('certificates')
-      .createSignedUrl(fileName, 3600);
 
     return NextResponse.json({
       success: true,
