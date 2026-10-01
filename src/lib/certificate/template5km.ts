@@ -32,7 +32,7 @@ export const getCertificate5kmSvg = (name: string, backgroundUrl: string = '/cer
             }
           </style>
         </defs>
-        <image href="${backgroundUrl}" width="3367" height="2381" x="0" y="0" />
+        <image href="${backgroundUrl}" width="3367" height="2381" x="0" y="0" preserveAspectRatio="none" />
         
         <g text-anchor="middle">
           <!-- Participant Name -->
