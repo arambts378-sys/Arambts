@@ -60,17 +60,21 @@ export async function POST(request: Request) {
     }
 
     // 3. Generate Certificate Content using Shared Template
-    // For server-side rendering, we must embed the background image and font as base64
-    const fs = require('fs');
-    const path = require('path');
-    const bgFilename = certificateType === '5KM' ? 'certificate-bg-5km.png' : 'certificate-bg-3km.png';
-    const bgPath = path.join(process.cwd(), 'public', bgFilename);
-    const bgBuffer = fs.readFileSync(bgPath);
-    const bgBase64 = `data:image/png;base64,${bgBuffer.toString('base64')}`;
+    // Fetch static assets via HTTP to prevent them from being bundled into the Vercel serverless function (which has a 50MB limit)
+    const host = request.headers.get('host') || 'localhost:3000';
+    const protocol = host.includes('localhost') ? 'http' : 'https';
+    const baseUrl = `${protocol}://${host}`;
 
-    const fontPath = path.join(process.cwd(), 'public', 'fonts', 'Avingal.ttf');
-    const fontBuffer = fs.readFileSync(fontPath);
-    const fontBase64 = `data:font/ttf;charset=utf-8;base64,${fontBuffer.toString('base64')}`;
+    const bgFilename = certificateType === '5KM' ? 'certificate-bg-5km.png' : 'certificate-bg-3km.png';
+    const bgResponse = await fetch(`${baseUrl}/${bgFilename}`);
+    if (!bgResponse.ok) throw new Error(`Failed to load background image: ${bgFilename}`);
+    const bgArrayBuffer = await bgResponse.arrayBuffer();
+    const bgBase64 = `data:image/png;base64,${Buffer.from(bgArrayBuffer).toString('base64')}`;
+
+    const fontResponse = await fetch(`${baseUrl}/fonts/Avingal.ttf`);
+    if (!fontResponse.ok) throw new Error('Failed to load font file');
+    const fontArrayBuffer = await fontResponse.arrayBuffer();
+    const fontBase64 = `data:font/ttf;charset=utf-8;base64,${Buffer.from(fontArrayBuffer).toString('base64')}`;
 
     const svgTemplate = certificateType === '5KM' 
       ? getCertificate5kmSvg(cleanName, bgBase64, fontBase64) 
