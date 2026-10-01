@@ -1,7 +1,7 @@
 import sharp from 'sharp';
 import path from 'path';
 import fs from 'fs/promises';
-import * as opentype from 'opentype.js';
+import { parse as parseFont } from 'opentype.js';
 
 function escapeXml(unsafe: string): string {
     return unsafe.replace(/[<>&'"]/g, (c) => {
@@ -33,48 +33,40 @@ export async function generateCertificatePng({
     // 2. Load Font
     const fontPath = path.join(process.cwd(), 'public', 'fonts', 'Avingal.ttf');
     const fontBuffer = await fs.readFile(fontPath);
-    const fontBase64 = `data:font/ttf;charset=utf-8;base64,${fontBuffer.toString('base64')}`;
     
     // 3. Measure text and calculate proportional font size
     const fontArrayBuffer = fontBuffer.buffer.slice(fontBuffer.byteOffset, fontBuffer.byteOffset + fontBuffer.byteLength);
-    const parsedFont = opentype.parse(fontArrayBuffer);
+    const parsedFont = parseFont(fontArrayBuffer);
     
     const BASE_FONT_SIZE = 176;
     const MAX_WIDTH = 1300;
     
-    const measuredWidth = parsedFont.getAdvanceWidth(cleanName, BASE_FONT_SIZE);
-    
     let fontSize = BASE_FONT_SIZE;
+    let measuredWidth = parsedFont.getAdvanceWidth(cleanName, fontSize);
+    
     if (measuredWidth > MAX_WIDTH) {
         fontSize = BASE_FONT_SIZE * (MAX_WIDTH / measuredWidth);
-        // Ensure it doesn't get ridiculously small, but follow proportionality
-        if (fontSize < 30) fontSize = 30;
+        if (fontSize < 30) fontSize = 30; // safety bound
+        // Remeasure with the new font size
+        measuredWidth = parsedFont.getAdvanceWidth(cleanName, fontSize);
     }
 
-    // 4. Generate transparent SVG with only the text
+    // 4. Center the text mathematically
+    const targetCenterX = 1708.6;
+    const targetBaselineY = 1176;
+    const startX = targetCenterX - (measuredWidth / 2);
+
+    // 5. Convert participant name to SVG paths
+    const opentypePath = parsedFont.getPath(cleanName, startX, targetBaselineY, fontSize);
+    const pathData = opentypePath.toPathData(2);
+
+    // 6. Generate transparent SVG with only the vector path
     const textSvg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="3367" height="2381">
-  <defs>
-    <style>
-      @font-face {
-        font-family: 'Avingal';
-        src: url('${fontBase64}') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-      }
-    </style>
-  </defs>
-  <text 
-    x="1708.6" 
-    y="1176" 
-    text-anchor="middle" 
-    font-family="Avingal" 
-    font-size="${fontSize}px" 
-    fill="#e32c53"
-  >${escapeXml(cleanName)}</text>
+  <path d="${pathData}" fill="#e32c53" />
 </svg>`;
 
-    // 5. Composite text over background
+    // 7. Composite path over background
     const finalPngBuffer = await sharp(bgBuffer)
         .composite([
             {
