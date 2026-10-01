@@ -17,8 +17,21 @@ export const escapeXml = (unsafe: string) => {
 export const getCertificate5kmSvg = (name: string, backgroundUrl: string = '/certificate-bg-5km.png', fontBase64: string = ''): string => {
     const cleanName = name.trim() || 'Your Name';
     
-    // Use provided base64 font for server-side Sharp generation, or absolute path for client-side browser preview
-    const fontSrc = fontBase64 || "url('/fonts/Avingal.ttf')";
+    // Wrap the base64 font in url() if it doesn't have it, otherwise fallback to absolute path
+    const fontSrc = fontBase64 
+        ? (fontBase64.startsWith('url') ? fontBase64 : `url('${fontBase64}')`)
+        : "url('/fonts/Avingal.ttf')";
+        
+    // Dynamic font scaling
+    const MAX_WIDTH = 1300;
+    const AVG_CHAR_WIDTH_RATIO = 0.47;
+    let fontSize = 176;
+    const estimatedWidth = cleanName.length * fontSize * AVG_CHAR_WIDTH_RATIO;
+    
+    if (estimatedWidth > MAX_WIDTH) {
+        fontSize = Math.floor(176 * (MAX_WIDTH / estimatedWidth));
+        if (fontSize < 60) fontSize = 60; // minimum legible size
+    }
 
     return `
       <svg width="3367" height="2381" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3367 2381">
@@ -39,14 +52,12 @@ export const getCertificate5kmSvg = (name: string, backgroundUrl: string = '/cer
           <text 
             x="1708.6" 
             y="1176" 
-            font-size="176px" 
+            font-size="${fontSize}px" 
             font-family="Avingal"
             font-weight="400" 
             font-style="normal"
             text-decoration="none"
             fill="#e32c53" 
-            textLength="${cleanName.length > 25 ? '2000' : ''}"
-            lengthAdjust="spacingAndGlyphs"
           >
             ${escapeXml(cleanName)}
           </text>
