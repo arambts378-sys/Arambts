@@ -75,7 +75,7 @@ export async function generateCertificatePng({
                 left: 0
             }
         ])
-        .png()
+        .png({ compressionLevel: 9, adaptiveFiltering: true, effort: 10 })
         .toBuffer();
 
     return finalPngBuffer;
