@@ -94,7 +94,7 @@ export const emailProvider = {
       throw new Error('EMAIL_INTEGRATION_NOT_CONFIGURED');
     }
 
-    const { registrationId, registrationNumber, attendee } = job.payload as {
+    let { registrationId, registrationNumber, attendee } = job.payload as {
       registrationId: string;
       registrationNumber: string;
       attendee: { firstName: string; lastName: string; email: string };
