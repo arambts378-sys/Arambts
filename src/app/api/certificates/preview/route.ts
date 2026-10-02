@@ -30,7 +30,9 @@ export async function GET(request: Request) {
     return new NextResponse(pngBuffer as any, {
       headers: {
         'Content-Type': 'image/png',
-        'Cache-Control': 'private, max-age=3600' // Do not cache publicly as it contains PII
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       }
     });
   } catch (error) {

@@ -20,7 +20,67 @@ export default function CertificateClient() {
   }, []);
 
   // Debounce the name so we don't bombard the server on every keystroke
-  const [debouncedName] = useDebounce(formData.name, 500);
+  const [debouncedName] = useDebounce(formData.name, 300);
+
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const currentRequestIdRef = React.useRef(0);
+  const abortControllerRef = React.useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    const trimmedName = debouncedName.trim();
+    if (!trimmedName || selectedType === 'none') {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      setPreviewUrl(prev => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+      setIsPreviewLoading(false);
+      return;
+    }
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    const requestId = ++currentRequestIdRef.current;
+    setIsPreviewLoading(true);
+
+    const typeParam = selectedType === '5km' ? '5KM' : 'standard';
+    const fetchUrl = `/api/certificates/preview?type=${typeParam}&name=${encodeURIComponent(trimmedName)}&t=${Date.now()}`;
+
+    fetch(fetchUrl, { signal: controller.signal })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        
+        if (requestId === currentRequestIdRef.current && !controller.signal.aborted) {
+          const objectUrl = URL.createObjectURL(blob);
+          setPreviewUrl(prev => {
+            if (prev) URL.revokeObjectURL(prev);
+            return objectUrl;
+          });
+          setIsPreviewLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (err.name === 'AbortError') return;
+        console.error('Preview fetch error:', err);
+        if (requestId === currentRequestIdRef.current) {
+          setIsPreviewLoading(false);
+        }
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [debouncedName, selectedType]);
 
   const handleAction = async (action: 'download' | 'email') => {
     if (!formData.name.trim()) {
@@ -136,14 +196,22 @@ export default function CertificateClient() {
         </div>
 
         {/* Live Preview */}
-        <div className="w-full mb-10 border border-outline-variant/50 rounded-2xl overflow-hidden shadow-sm bg-gray-50 flex items-center justify-center p-2 md:p-6 min-h-[300px]">
-          {debouncedName.trim() === '' ? (
+        <div className="w-full mb-10 border border-outline-variant/50 rounded-2xl overflow-hidden shadow-sm bg-gray-50 flex items-center justify-center p-2 md:p-6 min-h-[300px] relative">
+          {isPreviewLoading && (
+            <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center z-10 transition-all">
+              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-md text-primary font-bold text-sm">
+                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                Updating preview...
+              </div>
+            </div>
+          )}
+          {!previewUrl ? (
             <div className="text-gray-400 text-sm font-medium py-20 text-center">
               Enter your name below to generate preview
             </div>
           ) : (
             <img 
-              src={`/api/certificates/preview?type=${selectedType === '5km' ? '5KM' : 'standard'}&name=${encodeURIComponent(debouncedName.trim())}`}
+              src={previewUrl}
               alt="Certificate Preview"
               className="w-full max-w-3xl h-auto drop-shadow-sm rounded"
               style={{ aspectRatio: '3367/2381' }}
